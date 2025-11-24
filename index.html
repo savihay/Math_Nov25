@@ -56,34 +56,50 @@
             return newArray;
         };
 
-        // --- פונקציית עזר לעטיפת ביטויים מתמטיים ב-dir="ltr" ---
+        // --- פונקציית עזר לעטיפת ביטויים מתמטיים ב-dir="ltr" ולטיפול ב-\n ---
         const wrapMath = (text) => {
             if (typeof text !== 'string') return text;
             
-            // דפוס פשוט: ביטויים שמכילים = או ביטויים עם x ומספרים
-            const mathPattern = /([-+]?\d*[x]\s*[+\-×=]\s*[-+]?\d+[x]?|[-+]?\d+[x]\s*=\s*\d+|x\s*=\s*[-+]?\d+|\d+\([^)]+\)\s*=\s*\d+)/g;
+            // First, split by newlines
+            const lines = text.split('\n');
             
-            const parts = [];
-            let lastIndex = 0;
-            let match;
-            
-            while ((match = mathPattern.exec(text)) !== null) {
-                if (match.index > lastIndex) {
-                    parts.push(text.substring(lastIndex, match.index));
+            // Process each line for math expressions
+            const processedLines = lines.map((line, lineIdx) => {
+                const mathPattern = /([-+]?\d*[x]\s*[+\-×=]\s*[-+]?\d+[x]?|[-+]?\d+[x]\s*=\s*\d+|x\s*=\s*[-+]?\d+|\d+\([^)]+\)\s*=\s*\d+)/g;
+                
+                const parts = [];
+                let lastIndex = 0;
+                let match;
+                
+                while ((match = mathPattern.exec(line)) !== null) {
+                    if (match.index > lastIndex) {
+                        parts.push(line.substring(lastIndex, match.index));
+                    }
+                    parts.push(
+                        <span key={`math-${lineIdx}-${match.index}`} dir="ltr" style={{ display: 'inline-block', unicodeBidi: 'isolate' }}>
+                            {match[0]}
+                        </span>
+                    );
+                    lastIndex = match.index + match[0].length;
                 }
-                parts.push(
-                    <span key={`math-${match.index}`} dir="ltr" style={{ display: 'inline-block', unicodeBidi: 'isolate' }}>
-                        {match[0]}
-                    </span>
-                );
-                lastIndex = match.index + match[0].length;
-            }
+                
+                if (lastIndex < line.length) {
+                    parts.push(line.substring(lastIndex));
+                }
+                
+                return parts.length > 0 ? <>{parts}</> : line;
+            });
             
-            if (lastIndex < text.length) {
-                parts.push(text.substring(lastIndex));
-            }
+            // Join lines with <br /> elements
+            const result = [];
+            processedLines.forEach((line, idx) => {
+                result.push(<React.Fragment key={`line-${idx}`}>{line}</React.Fragment>);
+                if (idx < processedLines.length - 1) {
+                    result.push(<br key={`br-${idx}`} />);
+                }
+            });
             
-            return parts.length > 0 ? <>{parts}</> : text;
+            return result.length > 0 ? <>{result}</> : text;
         };
 
         // --- רכיבי אייקונים (SVG) ---
@@ -254,7 +270,7 @@
               },
               {
                 type: 'multiple',
-                q: 'פתור:\n 5x = 2x + 15',
+                q: 'פתור:\n5x = 2x + 15',
                 options: ['5', '3', '15', '-5'],
                 correct: '5',
                 explanation: 'נעביר את 2x אגף בחיסור:\n3x = 15\nנחלק ב-3 ונקבל x=5.'
@@ -682,7 +698,7 @@
                           </div>
                           <div>
                             <h3 className="font-bold text-gray-800 mb-1">{point.title}</h3>
-                            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{point.text}</p>
+                            <p className="text-gray-600 text-sm leading-relaxed">{wrapMath(point.text)}</p>
                           </div>
                         </div>
                       ))}
@@ -756,7 +772,7 @@
                 <div className="flex-1 flex flex-col">
                   <div className="bg-white rounded-3xl shadow-sm p-6 mb-6 border border-gray-100">
                     <span className="text-sm text-gray-400 font-medium mb-2 block">שאלה {questionIndex + 1} מתוך {questions.length}</span>
-                    <h2 className="text-xl font-bold text-gray-800 leading-relaxed whitespace-pre-line">{wrapMath(currentQ.q)}</h2>
+                    <h2 className="text-xl font-bold text-gray-800 leading-relaxed">{wrapMath(currentQ.q)}</h2>
                   </div>
 
                   {/* Options / Input */}
@@ -767,7 +783,7 @@
                           key={idx}
                           disabled={showFeedback}
                           onClick={() => handleAnswer(opt)}
-                          className={`w-full p-4 text-right rounded-xl border-2 transition-all duration-200 font-medium whitespace-pre-line
+                          className={`w-full p-4 text-right rounded-xl border-2 transition-all duration-200 font-medium
                             ${showFeedback 
                               ? opt === currentQ.correct 
                                 ? 'bg-green-50 border-green-500 text-green-700' 
@@ -813,7 +829,7 @@
                           {isCorrect ? 'צדקת! כל הכבוד' : 'לא נורא, ננסה שוב'}
                         </span>
                       </div>
-                      <p className="text-gray-600 text-sm leading-relaxed pr-9 whitespace-pre-line">
+                      <p className="text-gray-600 text-sm leading-relaxed pr-9">
                         {wrapMath(currentQ.explanation)}
                       </p>
                       <button
