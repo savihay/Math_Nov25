@@ -56,92 +56,6 @@
             return newArray;
         };
 
-        // --- רכיב לעיבוד טקסט עם תיקון כיוון לביטויים מתמטיים ---
-        const MathText = ({ children }) => {
-            if (typeof children !== 'string') return children;
-            
-            const text = children;
-            
-            // דפוסים בסדר חשיבות (מהמורכב לפשוט)
-            const patterns = [
-                // משוואות מלאות: y = -2x + 6, y = 3x - 5, y = x + 2, y = 8 - 2x
-                // מחפש: משתנה = [אופציונלי סימן][מספר][x] [אופציונלי רווח] [+/−] [אופציונלי רווח] [מספר]
-                /([a-zA-Z]\s*=\s*[-+]?\d+[x]\s*[+\-]\s*\d+)/g,
-                // משוואות עם משתנה אחרי המספר: y = 8 - 2x
-                /([a-zA-Z]\s*=\s*\d+\s*[+\-]\s*\d+[x])/g,
-                // משוואות עם x בלי מספר: y = x + 2, y = x - 5
-                /([a-zA-Z]\s*=\s*[x]\s*[+\-]\s*\d+)/g,
-                // משוואות פשוטות: y = -2x, y = 3x, y = -5, y = 5, y = x
-                /([a-zA-Z]\s*=\s*[-+]?\d+[x]?|[a-zA-Z]\s*=\s*[x])/g,
-                // ביטויים עם סוגריים: -2(4), -3(x+1), 4(x-2)
-                /([-+]?\d+\([^)]+\))/g,
-                // קואורדינטות: (0, -6), (4, -2), (-3, 5), (3, 0)
-                /(\([^)]*[-+]?\d+[^)]*\))/g,
-                // מספרים שליליים לפני משתנה: -2x, -3x, +5x
-                /([-+]?\d+[a-zA-Z])/g,
-                // יחסים: 3:4, 1:2:3, 10:20
-                /(\d+:\d+(?::\d+)?)/g,
-                // מספרים שליליים בודדים (רק אם לא חלק מביטוי אחר)
-                /(^|[\s(→←=])(-\d+)(?![a-zA-Z(])/g,
-            ];
-            
-            // איסוף כל ההתאמות
-            const allMatches = [];
-            patterns.forEach((pattern) => {
-                let match;
-                pattern.lastIndex = 0;
-                while ((match = pattern.exec(text)) !== null) {
-                    const start = match.index;
-                    const end = match.index + match[0].length;
-                    const matchedText = match[0];
-                    
-                    // בדיקה אם כבר עובד על ידי דפוס אחר
-                    const overlaps = allMatches.some(m => 
-                        (start >= m.start && start < m.end) ||
-                        (end > m.start && end <= m.end) ||
-                        (start <= m.start && end >= m.end)
-                    );
-                    
-                    if (!overlaps) {
-                        allMatches.push({ start, end, text: matchedText });
-                    }
-                }
-            });
-            
-            // אם אין התאמות, החזר טקסט רגיל
-            if (allMatches.length === 0) {
-                return children;
-            }
-            
-            // מיון לפי מיקום
-            allMatches.sort((a, b) => a.start - b.start);
-            
-            // בניית מערך של חלקים
-            const parts = [];
-            let lastIndex = 0;
-            
-            allMatches.forEach((match, idx) => {
-                // טקסט לפני הביטוי
-                if (match.start > lastIndex) {
-                    parts.push(text.substring(lastIndex, match.start));
-                }
-                // הביטוי המתמטי עם dir="ltr"
-                parts.push(
-                    <span key={`math-${idx}`} dir="ltr" style={{ display: 'inline-block', unicodeBidi: 'isolate' }}>
-                        {match.text}
-                    </span>
-                );
-                lastIndex = match.end;
-            });
-            
-            // טקסט אחרון
-            if (lastIndex < text.length) {
-                parts.push(text.substring(lastIndex));
-            }
-            
-            return <>{parts}</>;
-        };
-
         // --- רכיבי אייקונים (SVG) ---
         const Icons = {
             ChevronRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
@@ -243,7 +157,7 @@
               },
               {
                 type: 'input',
-                q: 'מהי נקודת החיתוך של y = -2x + 6 עם ציר ה-x? (  כתוב רק את המספר)',
+                q: 'מהי נקודת החיתוך של y = -2x + 6 עם ציר ה-x? ( מספר כתוב רק את ה)',
                 correct: '3',
                 explanation: 'מציבים y=0: 0 = -2x + 6 → 2x = 6 → x = 3. נקודת החיתוך היא (3, 0).'
               },
@@ -297,7 +211,7 @@
             questions: [
               {
                 type: 'input',
-                q: 'פתור את המשוואה: 2x - 4 = 10 (כתוב רק את המספר)',
+                q: 'פתור את המשוואה: 2x - 4 = 10\n(כתוב רק את המספר)',
                 correct: '7',
                 explanation: 'נעביר את ה-4 אגף: 2x = 14. נחלק ב-2 ונקבל x=7.'
               },
@@ -324,7 +238,7 @@
               },
               {
                 type: 'input',
-                q: 'פתור: x + 5 = -2 (כתוב את המספר)',
+                q: 'פתור: x + 5 = -2\n(כתוב את המספר)',
                 correct: '-7',
                 explanation: 'נעביר את ה-5 אגף (יהפוך למינוס): x = -2 - 5, ולכן x = -7.'
               },
@@ -337,7 +251,7 @@
               },
               {
                 type: 'input',
-                q: 'פתור: 4(x - 2) - 3(x + 1) = 5 (כתוב רק את המספר)',
+                q: 'פתור: 4(x - 2) - 3(x + 1) = 5\n(כתוב רק את המספר)',
                 correct: '16',
                 explanation: 'פותחים סוגריים: 4x - 8 - 3x - 3 = 5\nכונסים: x - 11 = 5\nמעבירים אגפים: x = 16'
               },
@@ -357,7 +271,7 @@
               },
               {
                 type: 'input',
-                q: 'פתור: 2(x + 3) = 14 (כתוב רק את המספר)',
+                q: 'פתור: 2(x + 3) = 14\n(כתוב רק את המספר)',
                 correct: '4',
                 explanation: 'פותחים סוגריים: 2x + 6 = 14\nמעבירים אגפים: 2x = 8\nמחלקים: x = 4'
               },
@@ -370,7 +284,7 @@
               },
               {
                 type: 'input',
-                q: 'פתור: 5(x - 1) - 2(x + 3) = 4 (כתוב רק את המספר)',
+                q: 'פתור: 5(x - 1) - 2(x + 3) = 4\n(כתוב רק את המספר)',
                 correct: '5',
                 explanation: 'פותחים: 5x - 5 - 2x - 6 = 4\nכונסים: 3x - 11 = 4\nמעבירים: 3x = 15 → x = 5'
               },
@@ -527,13 +441,13 @@
               },
               {
                 type: 'input',
-                q: 'בכיתה יש 35 תלמידים. היחס בין בנים לבנות הוא 3:4. כמה בנים יש? (כתוב רק את המספר)',
+                q: 'בכיתה יש 35 תלמידים. היחס בין בנים לבנות הוא 3:4. כמה בנים יש?\n(כתוב רק את המספר)',
                 correct: '15',
                 explanation: 'סה"כ 7 יחידות (3+4). כל יחידה שווה 5 (35÷7). בנים = 3×5 = 15.'
               },
               {
                 type: 'input',
-                q: 'בכיתה יש 35 תלמידים. היחס בין בנים לבנות הוא 3:4. כמה בנות יש? (כתוב רק את המספר)',
+                q: 'בכיתה יש 35 תלמידים. היחס בין בנים לבנות הוא 3:4. כמה בנות יש?\n(כתוב רק את המספר)',
                 correct: '20',
                 explanation: 'סה"כ 7 יחידות (3+4). כל יחידה שווה 5 (35÷7). בנות = 4×5 = 20.'
               },
@@ -546,7 +460,7 @@
               },
               {
                 type: 'input',
-                q: 'היחס בין קמח לסוכר הוא 5:1. אם יש 120 גרם תערובת, כמה גרם קמח יש? (כתוב רק את המספר)',
+                q: 'היחס בין קמח לסוכר הוא 5:1. אם יש 120 גרם תערובת, כמה גרם קמח יש?\n(כתוב רק את המספר)',
                 correct: '100',
                 explanation: 'סה"כ 6 יחידות (5+1). כל יחידה שווה 20 (120÷6). קמח (5 יחידות) = 5×20 = 100.'
               },
@@ -559,7 +473,7 @@
               },
               {
                 type: 'input',
-                q: 'היחס בין אורך לרוחב הוא 4:3. אם האורך הוא 20 ס"מ, מה הרוחב? (כתוב רק את המספר)',
+                q: 'היחס בין אורך לרוחב הוא 4:3. אם האורך הוא 20 ס"מ, מה הרוחב?\n(כתוב רק את המספר)',
                 correct: '15',
                 explanation: 'אם האורך (4 יחידות) הוא 20, אז כל יחידה שווה 5 (20÷4). הרוחב (3 יחידות) = 3×5 = 15.'
               },
@@ -727,7 +641,7 @@
                         <Icons.Lightbulb className="w-6 h-6 text-yellow-300" />
                         <span className="font-bold opacity-90">דף חזרה</span>
                       </div>
-                      <h1 className="text-2xl font-bold"><MathText>{currentTopic.studyMaterial.title}</MathText></h1>
+                      <h1 className="text-2xl font-bold">{currentTopic.studyMaterial.title}</h1>
                     </div>
                     
                     <div className="p-6 space-y-6">
@@ -737,8 +651,8 @@
                             {idx + 1}
                           </div>
                           <div>
-                            <h3 className="font-bold text-gray-800 mb-1"><MathText>{point.title}</MathText></h3>
-                            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line"><MathText>{point.text}</MathText></p>
+                            <h3 className="font-bold text-gray-800 mb-1">{point.title}</h3>
+                            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{point.text}</p>
                           </div>
                         </div>
                       ))}
@@ -812,7 +726,7 @@
                 <div className="flex-1 flex flex-col">
                   <div className="bg-white rounded-3xl shadow-sm p-6 mb-6 border border-gray-100">
                     <span className="text-sm text-gray-400 font-medium mb-2 block">שאלה {questionIndex + 1} מתוך {questions.length}</span>
-                    <h2 className="text-xl font-bold text-gray-800 leading-relaxed"><MathText>{currentQ.q}</MathText></h2>
+                    <h2 className="text-xl font-bold text-gray-800 leading-relaxed whitespace-pre-line">{currentQ.q}</h2>
                   </div>
 
                   {/* Options / Input */}
@@ -831,7 +745,7 @@
                               : 'bg-white border-transparent shadow-sm hover:border-blue-200 hover:bg-blue-50 text-gray-700'
                             }`}
                         >
-                          <MathText>{opt}</MathText>
+                          {opt}
                         </button>
                       ))
                     ) : (
@@ -870,7 +784,7 @@
                         </span>
                       </div>
                       <p className="text-gray-600 text-sm leading-relaxed pr-9">
-                        <MathText>{currentQ.explanation}</MathText>
+                        {currentQ.explanation}
                       </p>
                       <button
                         onClick={nextQuestion}
