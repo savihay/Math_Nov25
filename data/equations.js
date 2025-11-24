@@ -102,6 +102,115 @@ window.rawTopics.push({
             options: ['לפתוח סוגריים', 'להעביר את 10 אגף', 'לחלק ב-x', 'לכונס איברים'],
             correct: 'לפתוח סוגריים',
             explanation: 'תמיד מתחילים בפתיחת סוגריים לפני כל פעולה אחרת.'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\n3x = 18',
+            correct: '6',
+            explanation: 'מחלקים ב-3:\nx = 6'
+        },
+        {
+            type: 'multiple',
+            q: 'מה השלב הבא בפתרון:\nx/2 = 5',
+            options: ['להכפיל ב-2', 'לחלק ב-2', 'להחסיר 2', 'להוסיף 2'],
+            correct: 'להכפיל ב-2',
+            explanation: 'כדי לבודד את x שמחולק ב-2, צריך להכפיל את שני האגפים ב-2.'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\nx - 7 = 3',
+            correct: '10',
+            explanation: 'מעבירים את 7 אגף:\nx = 3 + 7\nx = 10'
+        },
+        {
+            type: 'multiple',
+            q: 'איזו משוואה מתאימה ל: "מספר פחות 4 שווה ל-10"?',
+            options: ['x - 4 = 10', '4 - x = 10', 'x + 4 = 10', 'x = 10 - 4'],
+            correct: 'x - 4 = 10',
+            explanation: 'מספר (x) פחות 4 (-4) שווה ל-10.'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\n2x + 1 = 9',
+            correct: '4',
+            explanation: 'מעבירים 1 אגף:\n2x = 8\nמחלקים ב-2:\nx = 4'
+        },
+        {
+            type: 'multiple',
+            q: 'מה הפתרון של:\n-x = 5',
+            options: ['-5', '5', '0', '1'],
+            correct: '-5',
+            explanation: 'מכפילים או מחלקים ב-1-:\nx = -5'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\n3(x + 2) = 15',
+            correct: '3',
+            explanation: 'פותחים סוגריים:\n3x + 6 = 15\n3x = 9\nx = 3'
+        },
+        {
+            type: 'multiple',
+            q: 'מה התוצאה של פתיחת סוגריים:\n5(2 - x)',
+            options: ['10 - 5x', '10 - x', '7 - x', '10 + 5x'],
+            correct: '10 - 5x',
+            explanation: '5 כפול 2 זה 10, 5 כפול מינוס x זה מינוס 5x.'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\n4x = x + 12',
+            correct: '4',
+            explanation: 'מעבירים את x אגף:\n3x = 12\nx = 4'
+        },
+        {
+            type: 'multiple',
+            q: 'אם 2x + 3 = 11, כמה שווה x?',
+            options: ['4', '3', '7', '8'],
+            correct: '4',
+            explanation: '2x = 8, לכן x = 4.'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\n10 - x = 4',
+            correct: '6',
+            explanation: 'מעבירים אגפים:\n10 - 4 = x\nx = 6'
+        },
+        {
+            type: 'multiple',
+            q: 'איך כותבים במשוואה: "הסכום של מספר ו-5 הוא 12"?',
+            options: ['x + 5 = 12', 'x - 5 = 12', '5x = 12', 'x = 12 + 5'],
+            correct: 'x + 5 = 12',
+            explanation: 'סכום זה חיבור.'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\n2(x - 1) + 3 = 9',
+            correct: '4',
+            explanation: 'פותחים סוגריים:\n2x - 2 + 3 = 9\n2x + 1 = 9\n2x = 8\nx = 4'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\n2x + 5 = 15',
+            correct: '5',
+            explanation: 'מעבירים 5 אגף:\n2x = 10\nמחלקים ב-2:\nx = 5'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\n3(x - 1) = 9',
+            correct: '4',
+            explanation: 'פותחים סוגריים:\n3x - 3 = 9\n3x = 12\nx = 4'
+        },
+        {
+            type: 'input',
+            q: 'פתור:\n5x - 2x = 12',
+            correct: '4',
+            explanation: 'מכנסים איברים:\n3x = 12\nx = 4'
+        },
+        {
+            type: 'multiple',
+            q: 'מה השלב הראשון בפתרון:\n3 + 2x = 13',
+            options: ['להעביר את 3 אגף', 'לחלק ב-2', 'לחבר 3 ו-2', 'להכפיל ב-3'],
+            correct: 'להעביר את 3 אגף',
+            explanation: 'קודם מבודדים את האיבר עם ה-x ע"י העברת המספרים החופשיים.'
         }
     ]
 });
