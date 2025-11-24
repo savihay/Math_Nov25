@@ -1,837 +1,461 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>מתרגלים בכיף - הכנה למבחן במתמטיקה</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@500&display=swap'); /* גופן למתמטיקה */
-        
-        body {
-            font-family: 'Rubik', sans-serif;
-            background-color: #f9fafb;
-            -webkit-tap-highlight-color: transparent;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>מתרגלים בכיף - הכנה למבחן במתמטיקה</title>
 
-        /* עיצוב למספרים ומשוואות */
-        .math-font {
-            font-family: 'Fira Code', monospace;
-            direction: ltr;
-            unicode-bidi: isolate;
-        }
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="data.js"></script>
 
-        @keyframes fall {
-            0% { transform: translateY(-10vh) rotate(0deg); }
-            100% { transform: translateY(100vh) rotate(360deg); }
-        }
-        .animate-fall {
-            animation-name: fall;
-            animation-timing-function: linear;
-            animation-iteration-count: infinite;
-        }
-        
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out;
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@500&display=swap');
+    /* גופן למתמטיקה */
+
+    body {
+      font-family: 'Rubik', sans-serif;
+      background-color: #f9fafb;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* עיצוב למספרים ומשוואות */
+    .math-font {
+      font-family: 'Fira Code', monospace;
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+
+    @keyframes fall {
+      0% {
+        transform: translateY(-10vh) rotate(0deg);
+      }
+
+      100% {
+        transform: translateY(100vh) rotate(360deg);
+      }
+    }
+
+    .animate-fall {
+      animation-name: fall;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
+
 <body>
-    <div id="root"></div>
+  <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-        const shuffleArray = (array) => {
-            const newArray = [...array];
-            for (let i = newArray.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-            }
-            return newArray;
-        };
+    const shuffleArray = (array) => {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    };
 
-        // --- פונקציה חדשה לטיפול בטקסט ומתמטיקה ---
-        // הפונקציה מפצלת שורות לפי \n.
-        // אם השורה מכילה עברית - היא RTL.
-        // אם השורה מכילה רק אנגלית/מספרים/סימנים - היא LTR וממורכזת.
-        const formatText = (text, isOption = false) => {
-            if (typeof text !== 'string') return text;
-            
-            // אם זו אופציה בתשובה אמריקאית ואין בה עברית, נציג אותה כ-LTR
-            if (isOption && !/[א-ת]/.test(text)) {
-                return <span className="math-font text-lg font-bold">{text}</span>;
-            }
+    // --- פונקציה חדשה לטיפול בטקסט ומתמטיקה ---
+    // הפונקציה מפצלת שורות לפי \n.
+    // אם השורה מכילה עברית - היא RTL.
+    // אם השורה מכילה רק אנגלית/מספרים/סימנים - היא LTR וממורכזת.
+    const formatText = (text, isOption = false) => {
+      if (typeof text !== 'string') return text;
 
-            return text.split('\n').map((line, idx) => {
-                const cleanLine = line.trim();
-                if (!cleanLine) return null;
+      // אם זו אופציה בתשובה אמריקאית ואין בה עברית, נציג אותה כ-LTR
+      if (isOption && !/[א-ת]/.test(text)) {
+        return <span className="math-font text-lg font-bold">{text}</span>;
+      }
 
-                // בדיקה: האם השורה מכילה אותיות בעברית?
-                const hasHebrew = /[א-ת]/.test(cleanLine);
-                
-                // אם אין עברית, נניח שזו משוואה או ביטוי מתמטי
-                if (!hasHebrew) {
-                    return (
-                        <div key={idx} className="w-full flex justify-center my-2">
-                            <span className="math-font bg-blue-50 text-blue-800 px-3 py-1 rounded-md text-xl font-bold shadow-sm border border-blue-100">
-                                {cleanLine}
-                            </span>
-                        </div>
-                    );
-                }
+      return text.split('\n').map((line, idx) => {
+        const cleanLine = line.trim();
+        if (!cleanLine) return null;
 
-                // טקסט רגיל (עברית)
-                return <div key={idx} className="mb-1 leading-relaxed">{cleanLine}</div>;
-            });
-        };
+        // בדיקה: האם השורה מכילה אותיות בעברית?
+        const hasHebrew = /[א-ת]/.test(cleanLine);
 
-        const Icons = {
-            ChevronRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
-            CheckCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-            XCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>,
-            Trophy: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17"/><path d="M14 14.66V17"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/><path d="M8.5 22v-2.08a6 6 0 0 1 .6-2.92"/></svg>,
-            BookOpen: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
-            Calculator: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
-            PieChart: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>,
-            Star: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-            RefreshCw: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>,
-            ArrowLeft: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
-            Lightbulb: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>,
-            Play: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        };
-
-        // --- עדכון הנתונים עם הפרדות שורה (\n) לטיפול בכיווניות ---
-        const rawTopics = [
-          {
-            id: 'functions',
-            title: 'פונקציה קווית',
-            icon: <Icons.PieChart className="w-6 h-6" />,
-            color: 'bg-blue-500',
-            lightColor: 'bg-blue-50',
-            borderColor: 'border-blue-200',
-            textColor: 'text-blue-700',
-            studyMaterial: {
-              title: 'הנוסחה:',
-              points: [
-                { title: 'הנוסחה הכללית', text: 'y = mx + b' },
-                { title: 'm (שיפוע)', text: 'המספר שצמוד ל-x.\nחיובי (+) = עולה ↗️\nשלילי (-) = יורדת ↘️\nאפס = קבועה (קו ישר מאוזן).' },
-                { title: 'b (חיתוך y)', text: 'המספר החופשי (בלי איקס). קובע באיזה גובה הפונקציה חותכת את ציר ה-y.' },
-                { title: 'נקודות חיתוך', text: 'עם ציר y: מציבים x=0.\nעם ציר x: מציבים y=0 ופותרים משוואה.' },
-                { title: '💡 דוגמה', text: 'נתונה הפונקציה:\ny = -2x + 6\nשיפוע: -2 (שלילי → יורדת)\nחיתוך y הוא בנקודה:\n(0, 6)\nחיתוך x (נציב y=0):\n0 = -2x + 6\n2x = 6\nx = 3' }
-              ]
-            },
-            questions: [
-              {
-                type: 'multiple',
-                q: 'בפונקציה:\ny = -3x + 5\nמהו השיפוע (m)?',
-                options: ['5', '-3', '3', '-5'],
-                correct: '-3',
-                explanation: 'השיפוע (m) הוא תמיד המספר שצמוד ל-x, כולל הסימן שלו.'
-              },
-              {
-                type: 'multiple',
-                q: 'האם הפונקציה:\ny = 4x - 2\nעולה או יורדת?',
-                options: ['עולה', 'יורדת', 'קבועה', 'לא ניתן לדעת'],
-                correct: 'עולה',
-                explanation: 'השיפוע (4) הוא חיובי, ולכן הפונקציה עולה.'
-              },
-              {
-                type: 'multiple',
-                q: 'מהי נקודת החיתוך של הפונקציה:\ny = 2x - 6\nעם ציר ה-y?',
-                options: ['(0, -6)', '(0, 6)', '(-6, 0)', '(0, 2)'],
-                correct: '(0, -6)',
-                explanation: 'בחיתוך עם ציר y ה-x שווה 0, וה-y שווה ל-b (המספר החופשי).'
-              },
-              {
-                type: 'multiple',
-                q: 'איזו נקודה נמצאת על הישר:\ny = x + 2',
-                options: ['(2, 4)', '(1, 4)', '(3, 4)', '(0, 0)'],
-                correct: '(2, 4)',
-                explanation: 'נציב x=2 במשוואה:\ny = 2 + 2\ny = 4\nהנקודה (2,4) מתאימה.'
-              },
-              {
-                type: 'multiple',
-                q: 'נתונה הפונקציה:\ny = -5\nאיזה סוג פונקציה זו?',
-                options: ['קבועה', 'עולה', 'יורדת', 'לא פונקציה'],
-                correct: 'קבועה',
-                explanation: 'אין x במשוואה (השיפוע הוא 0), ולכן הפונקציה קבועה ותמיד שווה ל-5-.'
-              },
-              {
-                type: 'multiple',
-                q: 'מה השיפוע של הפונקציה:\ny = 8 - 2x',
-                options: ['-2', '8', '2', '-8'],
-                correct: '-2',
-                explanation: 'שימו לב לסדר! השיפוע הוא תמיד המספר שצמוד ל-x. כאן הוא 2-.'
-              },
-              {
-                type: 'multiple',
-                q: 'דרך איזו נקודה עובר הישר:\ny = 3x',
-                options: ['(0, 0)', '(0, 3)', '(3, 0)', '(1, 1)'],
-                correct: '(0, 0)',
-                explanation: 'פונקציה מהצורה y=mx (בלי b) תמיד עוברת בראשית הצירים (0,0).'
-              },
-              {
-                type: 'multiple',
-                q: 'נתונה הפונקציה:\ny = -2x + 6\nמהו השיפוע?',
-                options: ['-2', '6', '2', '-6'],
-                correct: '-2',
-                explanation: 'השיפוע הוא המספר שצמוד ל-x, כולל הסימן. כאן השיפוע הוא -2.'
-              },
-              {
-                type: 'multiple',
-                q: 'נתונה הפונקציה:\ny = -2x + 6\nהאם היא עולה או יורדת?',
-                options: ['יורדת', 'עולה', 'קבועה', 'לא ניתן לדעת'],
-                correct: 'יורדת',
-                explanation: 'השיפוע הוא -2 (שלילי), ולכן הפונקציה יורדת.'
-              },
-              {
-                type: 'input',
-                q: 'מהי נקודת החיתוך של:\ny = -2x + 6\nעם ציר ה-x? (כתוב רק את המספר)',
-                correct: '3',
-                explanation: 'מציבים y=0:\n0 = -2x + 6\n2x = 6\nx = 3'
-              },
-              {
-                type: 'multiple',
-                q: 'מהי נקודת החיתוך של:\ny = -2x + 6\nעם ציר ה-y?',
-                options: ['(0, 6)', '(6, 0)', '(0, -2)', '(-2, 0)'],
-                correct: '(0, 6)',
-                explanation: 'מציבים x=0:\ny = -2(0) + 6 = 6\nנקודת החיתוך היא (0, 6).'
-              },
-              {
-                type: 'multiple',
-                q: 'האם הנקודה (4, -2) נמצאת על הישר:\ny = -2x + 6',
-                options: ['כן', 'לא', 'לא ניתן לדעת', 'רק אם x=4'],
-                correct: 'כן',
-                explanation: 'נציב x=4:\ny = -2(4) + 6 = -8 + 6 = -2\nיצא בדיוק ה-y של הנקודה, לכן היא על הישר.'
-              },
-              {
-                type: 'multiple',
-                q: 'מה השיפוע של הפונקציה:\ny = 5x',
-                options: ['5', '0', '1', 'לא ניתן לדעת'],
-                correct: '5',
-                explanation: 'כשאין b במשוואה, השיפוע הוא המספר שצמוד ל-x. כאן השיפוע הוא 5.'
-              },
-              {
-                type: 'multiple',
-                q: 'מהי נקודת החיתוך של:\ny = 3x - 9\nעם ציר ה-x?',
-                options: ['(3, 0)', '(0, 3)', '(0, -9)', '(-9, 0)'],
-                correct: '(3, 0)',
-                explanation: 'מציבים y=0:\n0 = 3x - 9\n3x = 9\nx = 3'
-              }
-            ]
-          },
-          {
-            id: 'equations',
-            title: 'משוואות',
-            icon: <Icons.Calculator className="w-6 h-6" />,
-            color: 'bg-green-500',
-            lightColor: 'bg-green-50',
-            borderColor: 'border-green-200',
-            textColor: 'text-green-700',
-            studyMaterial: {
-              title: 'חוקים לפתרון נכון',
-              points: [
-                { title: 'סדר פעולות', text: '1. פתיחת סוגריים\n2. העברת אגפים (מספרים לצד אחד, איקסים לשני)\n3. כינוס איברים\n4. חילוק במקדם של x.' },
-                { title: 'זהירות - מינוס!', text: 'מינוס לפני סוגריים הופך את כל הסימנים בפנים. דוגמה:\n-(x+2)\nהופך ל:\n-x - 2' },
-                { title: 'העברת אגפים', text: 'כשמעבירים איבר מצד לצד של ה"שווה", הסימן שלו משתנה (פלוס הופך למינוס ולהפך).' },
-                { title: '💡 דוגמה לפתרון', text: 'המשוואה:\n4(x - 2) - 3(x + 1) = 5\nשלב 1 - פתיחת סוגריים:\n4x - 8 - 3x - 3 = 5\nשלב 2 - כינוס איברים:\nx - 11 = 5\nשלב 3 - העברת אגפים:\nx = 5 + 11\nx = 16' }
-              ]
-            },
-            questions: [
-              {
-                type: 'input',
-                q: 'פתור את המשוואה:\n2x - 4 = 10\n(כתוב רק את המספר)',
-                correct: '7',
-                explanation: 'נעביר את ה-4 אגף:\n2x = 14\nנחלק ב-2 ונקבל x=7.'
-              },
-              {
-                type: 'multiple',
-                q: 'מה השלב הראשון בפתרון המשוואה?\n3(x - 2) = 9',
-                options: ['לפתוח סוגריים', 'להעביר את 9 אגף', 'לחלק ב-3', 'לחסר 3'],
-                correct: 'לחלק ב-3',
-                explanation: 'ניתן לחלק את שני האגפים ב-3:\n(x - 2) = 3\nואז להעביר אגפים: x = 5'
-              },
-              {
-                type: 'multiple',
-                q: 'פתור:\n5x = 2x + 15',
-                options: ['5', '3', '15', '-5'],
-                correct: '5',
-                explanation: 'נעביר את 2x אגף בחיסור:\n3x = 15\nנחלק ב-3 ונקבל x=5.'
-              },
-              {
-                type: 'multiple',
-                q: 'מה התוצאה של פתיחת הסוגריים?\n-2(x - 4)',
-                options: ['-2x + 8', '-2x - 8', '-2x - 4', '2x + 8'],
-                correct: '-2x + 8',
-                explanation: 'מינוס כפול מינוס נותן פלוס!\n-2 × (-4) = +8'
-              },
-              {
-                type: 'input',
-                q: 'פתור:\nx + 5 = -2',
-                correct: '-7',
-                explanation: 'נעביר את ה-5 אגף (יהפוך למינוס):\nx = -2 - 5\nלכן:\nx = -7'
-              },
-              {
-                type: 'multiple',
-                q: 'איזו משוואה מתאימה למשפט: "מספר כפול 3 ועוד 2 שווה ל-17"?',
-                options: ['3x + 2 = 17', '3(x + 2) = 17', 'x + 3 + 2 = 17', '2x + 3 = 17'],
-                correct: '3x + 2 = 17',
-                explanation: 'מספר (x) כפול 3 (3x) ועוד 2 (+2) שווה ל-17.'
-              },
-              {
-                type: 'input',
-                q: 'פתור:\n4(x - 2) - 3(x + 1) = 5\n(כתוב רק את המספר)',
-                correct: '16',
-                explanation: 'פותחים סוגריים:\n4x - 8 - 3x - 3 = 5\nכונסים:\nx - 11 = 5\nמעבירים אגפים:\nx = 16'
-              },
-              {
-                type: 'multiple',
-                q: 'מה התוצאה של פתיחת הסוגריים?\n4(x - 2)',
-                options: ['4x - 8', '4x - 2', '4x + 8', 'x - 8'],
-                correct: '4x - 8',
-                explanation: 'מכפילים את 4 בכל מה שבסוגריים:\n4 × x = 4x\n4 × (-2) = -8'
-              },
-              {
-                type: 'multiple',
-                q: 'מה התוצאה של פתיחת הסוגריים?\n-3(x + 1)',
-                options: ['-3x - 3', '-3x + 3', '3x - 3', '-3x + 1'],
-                correct: '-3x - 3',
-                explanation: 'המינוס משפיע על כל הסימנים!\n-3 × x = -3x\n-3 × (+1) = -3'
-              },
-              {
-                type: 'input',
-                q: 'פתור:\n2(x + 3) = 14',
-                correct: '4',
-                explanation: 'פותחים סוגריים:\n2x + 6 = 14\nמעבירים אגפים:\n2x = 8\nמחלקים:\nx = 4'
-              },
-              {
-                type: 'multiple',
-                q: 'פתור:\n3x - 5 = 2x + 7',
-                options: ['12', '2', '-12', '5'],
-                correct: '12',
-                explanation: 'מעבירים את 2x אגף:\nx - 5 = 7\nמעבירים את 5- אגף:\nx = 12'
-              },
-              {
-                type: 'input',
-                q: 'פתור:\n5(x - 1) - 2(x + 3) = 4',
-                correct: '5',
-                explanation: 'פותחים:\n5x - 5 - 2x - 6 = 4\nכונסים:\n3x - 11 = 4\nמעבירים:\n3x = 15\nx = 5'
-              },
-              {
-                type: 'multiple',
-                q: 'מה השלב הראשון בפתרון?\n2(x - 5) + 3(x + 1) = 10',
-                options: ['לפתוח סוגריים', 'להעביר את 10 אגף', 'לחלק ב-x', 'לכונס איברים'],
-                correct: 'לפתוח סוגריים',
-                explanation: 'תמיד מתחילים בפתיחת סוגריים לפני כל פעולה אחרת.'
-              }
-            ]
-          },
-          {
-            id: 'geometry',
-            title: 'גיאומטריה וחפיפה',
-            icon: <Icons.BookOpen className="w-6 h-6" />,
-            color: 'bg-purple-500',
-            lightColor: 'bg-purple-50',
-            borderColor: 'border-purple-200',
-            textColor: 'text-purple-700',
-            studyMaterial: {
-              title: 'איך מוכיחים חפיפה?',
-              points: [
-                { title: 'משפט צ.ז.צ', text: 'שתי צלעות שוות והזווית *שביניהן* שווה.' },
-                { title: 'משפט ז.צ.ז', text: 'שתי זוויות שוות והצלע *שביניהן* שווה.' },
-                { title: 'משפט צ.צ.צ', text: 'כל שלוש הצלעות שוות בהתאמה.' },
-                { title: 'נתונים מוחבאים', text: 'חפשו "שעון חול" (זוויות קודקודיות שוות) או צלע משותפת.' },
-                { title: '💡 דוגמה: הוכחת חפיפה', text: 'נתון:\nAM = MB, ∠A = ∠B\nצריך להוכיח:\nΔAMC ≅ ΔBMD\nטענה 1: \n∠A = ∠B (נתון)\nטענה 2:\nAM = MB (נתון)\nטענה 3:\n∠AMC = ∠BMD (קודקודיות)\nמסקנה: לפי ז.צ.ז' }
-              ]
-            },
-            questions: [
-              {
-                type: 'multiple',
-                q: 'נתונים שני משולשים שבהם שתי צלעות שוות והזווית הכלואה ביניהן שווה. לפי איזה משפט הם חופפים?',
-                options: ['צ.ז.צ', 'ז.צ.ז', 'צ.צ.צ', 'לא חופפים'],
-                correct: 'צ.ז.צ',
-                explanation: 'הנתון הוא: צלע, זווית ביניהן, וצלע נוספת. זהו בדיוק משפט צ.ז.צ.'
-              },
-              {
-                type: 'multiple',
-                q: 'נתון שכל שלוש הצלעות במשולש אחד שוות לצלעות במשולש השני. איזה משפט חפיפה זה?',
-                options: ['צ.צ.צ', 'צ.ז.צ', 'ז.צ.ז', 'אף אחד'],
-                correct: 'צ.צ.צ',
-                explanation: 'כאשר רק הצלעות ידועות כשווה, זהו משפט צ.צ.צ.'
-              },
-              {
-                type: 'multiple',
-                q: 'בציור של שני קווים ישרים שנחתכים (יוצרים X), מה נכון לגבי הזוויות שנמצאות אחת מול השנייה?',
-                options: ['הן שוות (קודקודיות)', 'סכומן 180', 'הן שונות', 'סכומן 90'],
-                correct: 'הן שוות (קודקודיות)',
-                explanation: 'זוויות קודקודיות תמיד שוות זו לזו.'
-              },
-              {
-                type: 'multiple',
-                q: 'אם נתון שמשולש ABC חופף למשולש DEF, איזו צלע שווה לצלע BC?',
-                options: ['EF', 'DE', 'DF', 'AB'],
-                correct: 'EF',
-                explanation: 'לפי סדר האותיות: BC הן האותיות השנייה והשלישית, ולכן מתאימות ל-EF (השנייה והשלישית במשולש השני).'
-              },
-              {
-                type: 'multiple',
-                q: 'במשולש שווה שוקיים, אילו זוויות שוות זו לזו?',
-                options: ['זוויות הבסיס', 'זווית הראש וזווית הבסיס', 'כל הזוויות שוות', 'אין זוויות שוות'],
-                correct: 'זוויות הבסיס',
-                explanation: 'במשולש שווה שוקיים, הזוויות שליד הבסיס (מול השוקיים השוות) תמיד שוות.'
-              },
-              {
-                type: 'multiple',
-                q: 'מהו סכום הזוויות בכל משולש?',
-                options: ['180 מעלות', '90 מעלות', '360 מעלות', '100 מעלות'],
-                correct: '180 מעלות',
-                explanation: 'משפט יסודי: סכום הזוויות בכל משולש הוא תמיד 180 מעלות.'
-              },
-              {
-                type: 'multiple',
-                q: 'בציור "שעון חול", מה נכון לגבי הזוויות הקודקודיות?',
-                options: ['הן שוות זו לזו', 'סכומן 180', 'סכומן 90', 'אין קשר ביניהן'],
-                correct: 'הן שוות זו לזו',
-                explanation: 'זוויות קודקודיות (שנוצרות כששני קווים נחתכים) תמיד שוות זו לזו. זה נתון מוחבא חשוב להוכחות!'
-              },
-              {
-                type: 'multiple',
-                q: 'נתון:\nAM = MB, ∠A = ∠B\nאיזה נתון נוסף צריך כדי להוכיח חפיפה לפי ז.צ.ז?',
-                options: ['זווית נוספת שווה', 'צלע משותפת', 'זוויות קודקודיות שוות', 'כל התשובות נכונות'],
-                correct: 'זוויות קודקודיות שוות',
-                explanation: 'יש לנו זווית וצלע. כדי להשתמש בז.צ.ז, צריך זווית נוספת שביניהן. זוויות קודקודיות הן הפתרון!'
-              },
-              {
-                type: 'multiple',
-                q: 'אם שני משולשים חופפים, מה נכון?',
-                options: ['כל הצלעות והזוויות שוות', 'רק הצלעות שוות', 'רק הזוויות שוות', 'רק חלק מהצלעות שוות'],
-                correct: 'כל הצלעות והזוויות שוות',
-                explanation: 'כשמשולשים חופפים, כל הצלעות והזוויות המתאימות שוות זו לזו.'
-              },
-              {
-                type: 'multiple',
-                q: 'במשולש שווה שוקיים, מה נכון לגבי השוקיים?',
-                options: ['הן שוות זו לזו', 'הן שונות', 'אחת כפולה מהשנייה', 'לא ניתן לדעת'],
-                correct: 'הן שוות זו לזו',
-                explanation: 'במשולש שווה שוקיים, שתי השוקיים תמיד שוות זו לזו (וזו ההגדרה שלו).'
-              },
-              {
-                type: 'multiple',
-                q: 'מהו משפט החפיפה המתאים כאשר יש שתי זוויות שוות וצלע אחת שווה?',
-                options: ['ז.צ.ז', 'צ.ז.צ', 'צ.צ.צ', 'לא ניתן להוכיח'],
-                correct: 'ז.צ.ז',
-                explanation: 'כשיש שתי זוויות שוות והצלע שביניהן שווה, משתמשים במשפט ז.צ.ז.'
-              }
-            ]
-          },
-          {
-            id: 'ratio',
-            title: 'יחס ופרופורציה',
-            icon: <Icons.Star className="w-6 h-6" />,
-            color: 'bg-orange-500',
-            lightColor: 'bg-orange-50',
-            borderColor: 'border-orange-200',
-            textColor: 'text-orange-700',
-            studyMaterial: {
-              title: 'שיטת השלבים',
-              points: [
-                { title: '1. חיבור', text: 'מחברים את מספרי היחס (למשל 2:3 זה 5 יחידות סה"כ).' },
-                { title: '2. חילוק', text: 'לוקחים את השלם ומחלקים בסכום שיצא. כך מוצאים כמה שווה "יחידה אחת".' },
-                { title: '3. כפל', text: 'מכפילים את השווי של יחידה אחת בכל אחד מחלקי היחס המקוריים.' },
-                { title: '💡 דוגמה', text: 'בכיתה 35 תלמידים, יחס 3:4\nשלב 1:\n3 + 4 = 7 (סה"כ יחידות)\nשלב 2:\n35 ÷ 7 = 5 (כל יחידה)\nשלב 3:\nבנים (3 יחידות) = 3 × 5 = 15\nבנות (4 יחידות) = 4 × 5 = 20\nבדיקה:\n15 + 20 = 35' }
-              ]
-            },
-            questions: [
-              {
-                type: 'input',
-                q: 'היחס בין בנים לבנות הוא 2:3. כמה יחידות יחס יש סה"כ?',
-                correct: '5',
-                explanation: 'מחברים את המספרים:\n2 + 3 = 5'
-              },
-              {
-                type: 'input',
-                q: 'מחלקים 20 סוכריות ביחס של 1:4. כמה סוכריות יקבל הילד עם החלק הקטן?',
-                correct: '4',
-                explanation: 'סה"כ 5 יחידות יחס. כל יחידה שווה 4 (20 לחלק ל-5). החלק הקטן הוא 1 (יחידה אחת) כפול 4.'
-              },
-              {
-                type: 'multiple',
-                q: 'אם היחס בין קמח לסוכר הוא 2:1, ויש 300 גרם תערובת. כמה גרם סוכר יש?',
-                options: ['100', '200', '150', '50'],
-                correct: '100',
-                explanation: 'סה"כ 3 יחידות (2+1). כל יחידה שווה 100 (300/3). הסוכר הוא יחידה אחת, ולכן 100 גרם.'
-              },
-              {
-                type: 'multiple',
-                q: 'איזה יחס שווה ליחס 10:20?',
-                options: ['1:2', '1:3', '2:1', '1:5'],
-                correct: '1:2',
-                explanation: 'אם נצמצם את שני המספרים ב-10 (נחלק ב-10), נקבל 1 ו-2.'
-              },
-              {
-                type: 'input',
-                q: 'בכיתה יש 35 תלמידים. היחס בין בנים לבנות הוא 3:4. כמה בנים יש?\n(כתוב רק את המספר)',
-                correct: '15',
-                explanation: 'סה"כ 7 יחידות (3+4). כל יחידה שווה 5 (35÷7).\nבנים = 3×5 = 15'
-              },
-              {
-                type: 'input',
-                q: 'בכיתה יש 35 תלמידים. היחס בין בנים לבנות הוא 3:4. כמה בנות יש?\n(כתוב רק את המספר)',
-                correct: '20',
-                explanation: 'סה"כ 7 יחידות (3+4). כל יחידה שווה 5 (35÷7).\nבנות = 4×5 = 20'
-              },
-              {
-                type: 'multiple',
-                q: 'מחלקים 60 שוקולדים ביחס של 2:3. כמה שוקולדים יקבל החלק הגדול?',
-                options: ['36', '24', '30', '40'],
-                correct: '36',
-                explanation: 'סה"כ 5 יחידות (2+3). כל יחידה שווה 12 (60÷5).\nהחלק הגדול (3 יחידות) = 3×12 = 36'
-              },
-              {
-                type: 'input',
-                q: 'היחס בין קמח לסוכר הוא 5:1. אם יש 120 גרם תערובת, כמה גרם קמח יש?\n(כתוב רק את המספר)',
-                correct: '100',
-                explanation: 'סה"כ 6 יחידות (5+1). כל יחידה שווה 20 (120÷6).\nקמח (5 יחידות) = 5×20 = 100'
-              },
-              {
-                type: 'multiple',
-                q: 'מחלקים כסף ביחס של 1:2:3. אם הסך הכל הוא 60 שקל, כמה יקבל החלק הקטן ביותר?',
-                options: ['10', '20', '30', '15'],
-                correct: '10',
-                explanation: 'סה"כ 6 יחידות (1+2+3). כל יחידה שווה 10 (60÷6).\nהחלק הקטן (1 יחידה) = 10'
-              },
-              {
-                type: 'input',
-                q: 'היחס בין אורך לרוחב הוא 4:3. אם האורך הוא 20 ס"מ, מה הרוחב?\n(כתוב רק את המספר)',
-                correct: '15',
-                explanation: 'אם האורך (4 יחידות) הוא 20, אז כל יחידה שווה 5 (20÷4).\nהרוחב (3 יחידות) = 3×5 = 15'
-              },
-              {
-                type: 'multiple',
-                q: 'מחלקים 48 תפוחים ביחס של 1:3. כמה תפוחים יקבל החלק הקטן?',
-                options: ['12', '16', '24', '36'],
-                correct: '12',
-                explanation: 'סה"כ 4 יחידות (1+3). כל יחידה שווה 12 (48÷4).\nהחלק הקטן (1 יחידה) = 12'
-              }
-            ]
-          }
-        ];
-
-        const Confetti = () => (
-          <div className="fixed inset-0 pointer-events-none z-50 flex justify-center items-start overflow-hidden">
-            {[...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute animate-fall"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  animationDuration: `${Math.random() * 3 + 2}s`,
-                  animationDelay: `${Math.random() * 2}s`
-                }}
-              >
-                <Icons.Star fill={['#FFD700', '#FF69B4', '#00CED1', '#32CD32'][Math.floor(Math.random() * 4)]} className="w-4 h-4 text-transparent" />
-              </div>
-            ))}
-          </div>
-        );
-
-        function MathApp() {
-          const [view, setView] = useState('menu'); // menu, study, quiz, completed
-          const [currentTopic, setCurrentTopic] = useState(null);
-          const [questions, setQuestions] = useState([]);
-          const [questionIndex, setQuestionIndex] = useState(0);
-          const [score, setScore] = useState(0);
-          const [showFeedback, setShowFeedback] = useState(false);
-          const [isCorrect, setIsCorrect] = useState(false);
-          const [inputValue, setInputValue] = useState('');
-          const [completedTopics, setCompletedTopics] = useState([]);
-
-          const handleTopicSelect = (topic) => {
-            const shuffledQuestions = topic.questions.map(q => {
-              if (q.type === 'multiple') {
-                return { ...q, options: shuffleArray(q.options) };
-              }
-              return q;
-            });
-
-            const finalQuestions = shuffleArray(shuffledQuestions);
-
-            setCurrentTopic(topic);
-            setQuestions(finalQuestions);
-            setQuestionIndex(0);
-            setScore(0);
-            setShowFeedback(false);
-            setInputValue('');
-            setView('study');
-          };
-
-          const startQuiz = () => {
-            setView('quiz');
-          };
-
-          const handleAnswer = (answer) => {
-            if (showFeedback) return;
-            
-            const correct = questions[questionIndex].correct;
-            const isRight = answer.toString().trim() === correct.toString().trim();
-            
-            setIsCorrect(isRight);
-            if (isRight) setScore(score + 1);
-            setShowFeedback(true);
-          };
-
-          const nextQuestion = () => {
-            if (questionIndex < questions.length - 1) {
-              setQuestionIndex(questionIndex + 1);
-              setShowFeedback(false);
-              setInputValue('');
-              setIsCorrect(false);
-            } else {
-              if (!completedTopics.includes(currentTopic.id)) {
-                setCompletedTopics([...completedTopics, currentTopic.id]);
-              }
-              setView('completed');
-            }
-          };
-
-          const resetApp = () => {
-            setCurrentTopic(null);
-            setQuestions([]);
-            setQuestionIndex(0);
-            setView('menu');
-          };
-
-          // Main Menu View
-          if (view === 'menu') {
-            return (
-              <div className="min-h-screen p-4">
-                <div className="max-w-md mx-auto">
-                  <header className="mb-8 text-center pt-4">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">מתרגלים בכיף 🚀</h1>
-                    <p className="text-gray-600">הכנה למבחן במתמטיקה - כיתה ח'</p>
-                    <div className="mt-4 flex justify-center gap-2">
-                      <span className="text-sm bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200 text-gray-600">
-                        הושלמו: {completedTopics.length}/{rawTopics.length}
-                      </span>
-                    </div>
-                  </header>
-
-                  <div className="grid gap-4 pb-8">
-                    {rawTopics.map((topic) => (
-                      <button
-                        key={topic.id}
-                        onClick={() => handleTopicSelect(topic)}
-                        className={`relative overflow-hidden p-6 rounded-2xl shadow-sm hover:shadow-md transition-all bg-white text-right group border border-transparent hover:border-gray-100`}
-                      >
-                        <div className={`absolute inset-y-0 left-0 w-2 ${topic.color}`}></div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-xl ${topic.lightColor} ${topic.textColor} group-hover:scale-110 transition-transform`}>
-                              {topic.icon}
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-lg text-gray-800 group-hover:text-blue-600 transition-colors">{topic.title}</h3>
-                              <p className="text-sm text-gray-500">{topic.questions.length} שאלות</p>
-                            </div>
-                          </div>
-                          {completedTopics.includes(topic.id) ? (
-                            <Icons.CheckCircle className="w-6 h-6 text-green-500" />
-                          ) : (
-                            <Icons.ChevronRight className="w-6 h-6 text-gray-300" />
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
-          // Study View
-          if (view === 'study' && currentTopic) {
-            return (
-              <div className="min-h-screen p-4">
-                <div className="max-w-md mx-auto flex flex-col h-full">
-                  <div className="flex items-center gap-4 mb-6">
-                    <button onClick={resetApp} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                      <Icons.ArrowLeft className="w-6 h-6 text-gray-600" />
-                    </button>
-                    <h2 className="text-xl font-bold text-gray-800">חזרה על החומר</h2>
-                  </div>
-
-                  <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6 flex-1">
-                    <div className={`${currentTopic.color} p-6 text-white`}>
-                      <div className="flex items-center gap-3 mb-2">
-                        <Icons.Lightbulb className="w-6 h-6 text-yellow-300" />
-                        <span className="font-bold opacity-90">דף חזרה</span>
-                      </div>
-                      <h1 className="text-2xl font-bold">{currentTopic.studyMaterial.title}</h1>
-                    </div>
-                    
-                    <div className="p-6 space-y-6">
-                      {currentTopic.studyMaterial.points.map((point, idx) => (
-                        <div key={idx} className="flex gap-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${currentTopic.lightColor} ${currentTopic.textColor}`}>
-                            {idx + 1}
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-gray-800 mb-1">{point.title}</h3>
-                            <div className="text-gray-600 text-sm">{formatText(point.text)}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={startQuiz}
-                    className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 ${currentTopic.color}`}
-                  >
-                    <Icons.Play className="w-5 h-5 fill-current" />
-                    התחל תרגול
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          // Completed View
-          if (view === 'completed') {
-            return (
-              <div className="min-h-screen p-4 flex items-center justify-center">
-                <Confetti />
-                <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-sm w-full relative overflow-hidden animate-fade-in-up">
-                  <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 to-purple-500"></div>
-                  <div className="mb-6 flex justify-center">
-                    <Icons.Trophy className="w-20 h-20 text-yellow-400 drop-shadow-lg animate-bounce" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">כל הכבוד!</h2>
-                  <p className="text-gray-600 mb-6">סיימת את היחידה בהצלחה!</p>
-                  <div className="text-4xl font-bold text-blue-600 mb-8">{score} / {questions.length}</div>
-                  <button
-                    onClick={resetApp}
-                    className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Icons.RefreshCw className="w-4 h-4" />
-                    חזרה לתפריט הראשי
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          // Quiz View
-          const currentQ = questions[questionIndex];
-          const progress = ((questionIndex) / questions.length) * 100;
-
+        // אם אין עברית, נניח שזו משוואה או ביטוי מתמטי
+        if (!hasHebrew) {
           return (
-            <div className="min-h-screen p-4 font-sans">
-              <div className="max-w-md mx-auto h-full flex flex-col">
-                
-                <div className="flex items-center justify-between mb-6">
-                  <button onClick={() => setView('study')} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                    <Icons.ArrowLeft className="w-6 h-6 text-gray-600" />
-                  </button>
-                  <span className="font-bold text-gray-700">{currentTopic.title}</span>
-                  <div className="w-8"></div> 
-                </div>
-
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-8 overflow-hidden">
-                  <div 
-                    className={`h-2 rounded-full transition-all duration-500 ${currentTopic.color}`} 
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-
-                <div className="flex-1 flex flex-col">
-                  <div className="bg-white rounded-3xl shadow-sm p-6 mb-6 border border-gray-100">
-                    <span className="text-sm text-gray-400 font-medium mb-2 block">שאלה {questionIndex + 1} מתוך {questions.length}</span>
-                    <h2 className="text-xl font-bold text-gray-800 leading-relaxed">{formatText(currentQ.q)}</h2>
-                  </div>
-
-                  <div className="space-y-3">
-                    {currentQ.type === 'multiple' ? (
-                      currentQ.options.map((opt, idx) => (
-                        <button
-                          key={idx}
-                          disabled={showFeedback}
-                          onClick={() => handleAnswer(opt)}
-                          className={`w-full p-4 text-right rounded-xl border-2 transition-all duration-200 font-medium
-                            ${showFeedback 
-                              ? opt === currentQ.correct 
-                                ? 'bg-green-50 border-green-500 text-green-700' 
-                                : opt === inputValue ? 'bg-red-50 border-red-200 text-red-400' : 'bg-white border-gray-100 opacity-50'
-                              : 'bg-white border-transparent shadow-sm hover:border-blue-200 hover:bg-blue-50 text-gray-700'
-                            }`}
-                        >
-                          {formatText(opt, true)}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="relative">
-                        <input
-                          type="text"
-                          disabled={showFeedback}
-                          value={inputValue}
-                          onChange={(e) => setInputValue(e.target.value)}
-                          placeholder="הקלד תשובה..."
-                          className="w-full p-4 rounded-xl border-2 border-gray-200 text-lg focus:border-blue-500 focus:outline-none text-center math-font"
-                        />
-                        {!showFeedback && inputValue && (
-                          <button 
-                            onClick={() => handleAnswer(inputValue)}
-                            className="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700"
-                          >
-                            בדוק תשובה
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {showFeedback && (
-                    <div className={`mt-6 p-4 rounded-xl ${isCorrect ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'} animate-fade-in-up`}>
-                      <div className="flex items-center gap-3 mb-2">
-                        {isCorrect ? (
-                          <Icons.CheckCircle className="w-6 h-6 text-green-500" />
-                        ) : (
-                          <Icons.XCircle className="w-6 h-6 text-red-500" />
-                        )}
-                        <span className={`font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
-                          {isCorrect ? 'צדקת! כל הכבוד' : 'לא נורא, ננסה שוב'}
-                        </span>
-                      </div>
-                      <div className="text-gray-600 text-sm leading-relaxed pr-9">
-                        {formatText(currentQ.explanation)}
-                      </div>
-                      <button
-                        onClick={nextQuestion}
-                        className={`mt-4 w-full py-3 rounded-lg font-bold text-white transition-transform active:scale-95 ${isCorrect ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-800 hover:bg-gray-900'}`}
-                      >
-                        {questionIndex < questions.length - 1 ? 'לשאלה הבאה' : 'סיים יחידה'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div key={idx} className="w-full flex justify-center my-2">
+              <span className="math-font bg-blue-50 text-blue-800 px-3 py-1 rounded-md text-xl font-bold shadow-sm border border-blue-100">
+                {cleanLine}
+              </span>
             </div>
           );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<MathApp />);
-    </script>
+        // טקסט רגיל (עברית)
+        return <div key={idx} className="mb-1 leading-relaxed">{cleanLine}</div>;
+      });
+    };
+
+    const Icons = {
+      ChevronRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>,
+      CheckCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
+      XCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>,
+      Trophy: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17" /><path d="M14 14.66V17" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /><path d="M8.5 22v-2.08a6 6 0 0 1 .6-2.92" /></svg>,
+      BookOpen: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>,
+      Calculator: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" /><line x1="8" x2="16" y1="6" y2="6" /><line x1="16" x2="16" y1="14" y2="18" /><path d="M16 10h.01" /><path d="M12 10h.01" /><path d="M8 10h.01" /><path d="M12 14h.01" /><path d="M8 14h.01" /><path d="M12 18h.01" /><path d="M8 18h.01" /></svg>,
+      PieChart: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></svg>,
+      Star: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>,
+      RefreshCw: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>,
+      ArrowLeft: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>,
+      Lightbulb: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /><path d="M9 18h6" /><path d="M10 22h4" /></svg>,
+      Play: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+    };
+
+    // --- עיבוד הנתונים מ-data.js ---
+    // הנתונים נטענים מ-data.js לתוך window.rawTopics
+    // אנחנו ממירים את שמות האייקונים (מחרוזות) לקומפוננטות ריאקט
+    const rawTopics = window.rawTopics.map(topic => {
+      const IconComponent = Icons[topic.icon];
+      return {
+        ...topic,
+        icon: <IconComponent className="w-6 h-6" />
+      };
+    });
+
+    const Confetti = () => (
+      <div className="fixed inset-0 pointer-events-none z-50 flex justify-center items-start overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-fall"
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDuration: `${Math.random() * 3 + 2}s`,
+              animationDelay: `${Math.random() * 2}s`
+            }}
+          >
+            <Icons.Star fill={['#FFD700', '#FF69B4', '#00CED1', '#32CD32'][Math.floor(Math.random() * 4)]} className="w-4 h-4 text-transparent" />
+          </div>
+        ))}
+      </div>
+    );
+
+    function MathApp() {
+      const [view, setView] = useState('menu'); // menu, study, quiz, completed
+      const [currentTopic, setCurrentTopic] = useState(null);
+      const [questions, setQuestions] = useState([]);
+      const [questionIndex, setQuestionIndex] = useState(0);
+      const [score, setScore] = useState(0);
+      const [showFeedback, setShowFeedback] = useState(false);
+      const [isCorrect, setIsCorrect] = useState(false);
+      const [inputValue, setInputValue] = useState('');
+      const [completedTopics, setCompletedTopics] = useState([]);
+
+      const handleTopicSelect = (topic) => {
+        const shuffledQuestions = topic.questions.map(q => {
+          if (q.type === 'multiple') {
+            return { ...q, options: shuffleArray(q.options) };
+          }
+          return q;
+        });
+
+        const finalQuestions = shuffleArray(shuffledQuestions);
+
+        setCurrentTopic(topic);
+        setQuestions(finalQuestions);
+        setQuestionIndex(0);
+        setScore(0);
+        setShowFeedback(false);
+        setInputValue('');
+        setView('study');
+      };
+
+      const startQuiz = () => {
+        setView('quiz');
+      };
+
+      const handleAnswer = (answer) => {
+        if (showFeedback) return;
+
+        const correct = questions[questionIndex].correct;
+
+        // בדיקה חכמה יותר שתומכת גם במספרים (למשל 3.5 שווה ל-3.50)
+        const isNumeric = (val) => !isNaN(parseFloat(val)) && isFinite(val);
+        let isRight = false;
+
+        if (isNumeric(answer) && isNumeric(correct)) {
+          // אם שניהם מספרים, נבדוק הפרש קטן מאוד
+          isRight = Math.abs(parseFloat(answer) - parseFloat(correct)) < 0.001;
+        } else {
+          // אחרת, השוואת מחרוזות רגילה
+          isRight = answer.toString().trim() === correct.toString().trim();
+        }
+
+        setIsCorrect(isRight);
+        if (isRight) setScore(score + 1);
+        setShowFeedback(true);
+      };
+
+      const nextQuestion = () => {
+        if (questionIndex < questions.length - 1) {
+          setQuestionIndex(questionIndex + 1);
+          setShowFeedback(false);
+          setInputValue('');
+          setIsCorrect(false);
+        } else {
+          if (!completedTopics.includes(currentTopic.id)) {
+            setCompletedTopics([...completedTopics, currentTopic.id]);
+          }
+          setView('completed');
+        }
+      };
+
+      const resetApp = () => {
+        setCurrentTopic(null);
+        setQuestions([]);
+        setQuestionIndex(0);
+        setView('menu');
+      };
+
+      // Main Menu View
+      if (view === 'menu') {
+        return (
+          <div className="min-h-screen p-4">
+            <div className="max-w-md mx-auto">
+              <header className="mb-8 text-center pt-4">
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">מתרגלים בכיף 🚀</h1>
+                <p className="text-gray-600">הכנה למבחן במתמטיקה - כיתה ח'</p>
+                <div className="mt-4 flex justify-center gap-2">
+                  <span className="text-sm bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200 text-gray-600">
+                    הושלמו: {completedTopics.length}/{rawTopics.length}
+                  </span>
+                </div>
+              </header>
+
+              <div className="grid gap-4 pb-8">
+                {rawTopics.map((topic) => (
+                  <button
+                    key={topic.id}
+                    onClick={() => handleTopicSelect(topic)}
+                    className={`relative overflow-hidden p-6 rounded-2xl shadow-sm hover:shadow-md transition-all bg-white text-right group border border-transparent hover:border-gray-100`}
+                  >
+                    <div className={`absolute inset-y-0 left-0 w-2 ${topic.color}`}></div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-xl ${topic.lightColor} ${topic.textColor} group-hover:scale-110 transition-transform`}>
+                          {topic.icon}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg text-gray-800 group-hover:text-blue-600 transition-colors">{topic.title}</h3>
+                          <p className="text-sm text-gray-500">{topic.questions.length} שאלות</p>
+                        </div>
+                      </div>
+                      {completedTopics.includes(topic.id) ? (
+                        <Icons.CheckCircle className="w-6 h-6 text-green-500" />
+                      ) : (
+                        <Icons.ChevronRight className="w-6 h-6 text-gray-300" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Study View
+      if (view === 'study' && currentTopic) {
+        return (
+          <div className="min-h-screen p-4">
+            <div className="max-w-md mx-auto flex flex-col h-full">
+              <div className="flex items-center gap-4 mb-6">
+                <button onClick={resetApp} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                  <Icons.ArrowLeft className="w-6 h-6 text-gray-600" />
+                </button>
+                <h2 className="text-xl font-bold text-gray-800">חזרה על החומר</h2>
+              </div>
+
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6 flex-1">
+                <div className={`${currentTopic.color} p-6 text-white`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Icons.Lightbulb className="w-6 h-6 text-yellow-300" />
+                    <span className="font-bold opacity-90">דף חזרה</span>
+                  </div>
+                  <h1 className="text-2xl font-bold">{currentTopic.studyMaterial.title}</h1>
+                </div>
+
+                <div className="p-6 space-y-6">
+                  {currentTopic.studyMaterial.points.map((point, idx) => (
+                    <div key={idx} className="flex gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${currentTopic.lightColor} ${currentTopic.textColor}`}>
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-800 mb-1">{point.title}</h3>
+                        <div className="text-gray-600 text-sm">{formatText(point.text)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={startQuiz}
+                className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 ${currentTopic.color}`}
+              >
+                <Icons.Play className="w-5 h-5 fill-current" />
+                התחל תרגול
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Completed View
+      if (view === 'completed') {
+        return (
+          <div className="min-h-screen p-4 flex items-center justify-center">
+            <Confetti />
+            <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-sm w-full relative overflow-hidden animate-fade-in-up">
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 to-purple-500"></div>
+              <div className="mb-6 flex justify-center">
+                <Icons.Trophy className="w-20 h-20 text-yellow-400 drop-shadow-lg animate-bounce" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">כל הכבוד!</h2>
+              <p className="text-gray-600 mb-6">סיימת את היחידה בהצלחה!</p>
+              <div className="text-4xl font-bold text-blue-600 mb-8">{score} / {questions.length}</div>
+              <button
+                onClick={resetApp}
+                className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <Icons.RefreshCw className="w-4 h-4" />
+                חזרה לתפריט הראשי
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Quiz View
+      const currentQ = questions[questionIndex];
+      const progress = ((questionIndex) / questions.length) * 100;
+
+      return (
+        <div className="min-h-screen p-4 font-sans">
+          <div className="max-w-md mx-auto h-full flex flex-col">
+
+            <div className="flex items-center justify-between mb-6">
+              <button onClick={() => setView('study')} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                <Icons.ArrowLeft className="w-6 h-6 text-gray-600" />
+              </button>
+              <span className="font-bold text-gray-700">{currentTopic.title}</span>
+              <div className="w-8"></div>
+            </div>
+
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-8 overflow-hidden">
+              <div
+                className={`h-2 rounded-full transition-all duration-500 ${currentTopic.color}`}
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+
+            <div className="flex-1 flex flex-col">
+              <div className="bg-white rounded-3xl shadow-sm p-6 mb-6 border border-gray-100">
+                <span className="text-sm text-gray-400 font-medium mb-2 block">שאלה {questionIndex + 1} מתוך {questions.length}</span>
+                <h2 className="text-xl font-bold text-gray-800 leading-relaxed">{formatText(currentQ.q)}</h2>
+              </div>
+
+              <div className="space-y-3">
+                {currentQ.type === 'multiple' ? (
+                  currentQ.options.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      disabled={showFeedback}
+                      onClick={() => handleAnswer(opt)}
+                      className={`w-full p-4 text-right rounded-xl border-2 transition-all duration-200 font-medium
+                            ${showFeedback
+                          ? opt === currentQ.correct
+                            ? 'bg-green-50 border-green-500 text-green-700'
+                            : opt === inputValue ? 'bg-red-50 border-red-200 text-red-400' : 'bg-white border-gray-100 opacity-50'
+                          : 'bg-white border-transparent shadow-sm hover:border-blue-200 hover:bg-blue-50 text-gray-700'
+                        }`}
+                    >
+                      {formatText(opt, true)}
+                    </button>
+                  ))
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      disabled={showFeedback}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      placeholder="הקלד תשובה..."
+                      className="w-full p-4 rounded-xl border-2 border-gray-200 text-lg focus:border-blue-500 focus:outline-none text-center math-font"
+                    />
+                    {!showFeedback && inputValue && (
+                      <button
+                        onClick={() => handleAnswer(inputValue)}
+                        className="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700"
+                      >
+                        בדוק תשובה
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {showFeedback && (
+                <div className={`mt-6 p-4 rounded-xl ${isCorrect ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'} animate-fade-in-up`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    {isCorrect ? (
+                      <Icons.CheckCircle className="w-6 h-6 text-green-500" />
+                    ) : (
+                      <Icons.XCircle className="w-6 h-6 text-red-500" />
+                    )}
+                    <span className={`font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                      {isCorrect ? 'צדקת! כל הכבוד' : 'לא נורא, ננסה שוב'}
+                    </span>
+                  </div>
+                  <div className="text-gray-600 text-sm leading-relaxed pr-9">
+                    {formatText(currentQ.explanation)}
+                  </div>
+                  <button
+                    onClick={nextQuestion}
+                    className={`mt-4 w-full py-3 rounded-lg font-bold text-white transition-transform active:scale-95 ${isCorrect ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-800 hover:bg-gray-900'}`}
+                  >
+                    {questionIndex < questions.length - 1 ? 'לשאלה הבאה' : 'סיים יחידה'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<MathApp />);
+  </script>
 </body>
+
 </html>
