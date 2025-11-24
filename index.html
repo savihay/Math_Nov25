@@ -56,6 +56,92 @@
             return newArray;
         };
 
+        // --- רכיב לעיבוד טקסט עם תיקון כיוון לביטויים מתמטיים ---
+        const MathText = ({ children }) => {
+            if (typeof children !== 'string') return children;
+            
+            const text = children;
+            
+            // דפוסים בסדר חשיבות (מהמורכב לפשוט)
+            const patterns = [
+                // משוואות מלאות: y = -2x + 6, y = 3x - 5, y = x + 2, y = 8 - 2x
+                // מחפש: משתנה = [אופציונלי סימן][מספר][x] [אופציונלי רווח] [+/−] [אופציונלי רווח] [מספר]
+                /([a-zA-Z]\s*=\s*[-+]?\d+[x]\s*[+\-]\s*\d+)/g,
+                // משוואות עם משתנה אחרי המספר: y = 8 - 2x
+                /([a-zA-Z]\s*=\s*\d+\s*[+\-]\s*\d+[x])/g,
+                // משוואות עם x בלי מספר: y = x + 2, y = x - 5
+                /([a-zA-Z]\s*=\s*[x]\s*[+\-]\s*\d+)/g,
+                // משוואות פשוטות: y = -2x, y = 3x, y = -5, y = 5, y = x
+                /([a-zA-Z]\s*=\s*[-+]?\d+[x]?|[a-zA-Z]\s*=\s*[x])/g,
+                // ביטויים עם סוגריים: -2(4), -3(x+1), 4(x-2)
+                /([-+]?\d+\([^)]+\))/g,
+                // קואורדינטות: (0, -6), (4, -2), (-3, 5), (3, 0)
+                /(\([^)]*[-+]?\d+[^)]*\))/g,
+                // מספרים שליליים לפני משתנה: -2x, -3x, +5x
+                /([-+]?\d+[a-zA-Z])/g,
+                // יחסים: 3:4, 1:2:3, 10:20
+                /(\d+:\d+(?::\d+)?)/g,
+                // מספרים שליליים בודדים (רק אם לא חלק מביטוי אחר)
+                /(^|[\s(→←=])(-\d+)(?![a-zA-Z(])/g,
+            ];
+            
+            // איסוף כל ההתאמות
+            const allMatches = [];
+            patterns.forEach((pattern) => {
+                let match;
+                pattern.lastIndex = 0;
+                while ((match = pattern.exec(text)) !== null) {
+                    const start = match.index;
+                    const end = match.index + match[0].length;
+                    const matchedText = match[0];
+                    
+                    // בדיקה אם כבר עובד על ידי דפוס אחר
+                    const overlaps = allMatches.some(m => 
+                        (start >= m.start && start < m.end) ||
+                        (end > m.start && end <= m.end) ||
+                        (start <= m.start && end >= m.end)
+                    );
+                    
+                    if (!overlaps) {
+                        allMatches.push({ start, end, text: matchedText });
+                    }
+                }
+            });
+            
+            // אם אין התאמות, החזר טקסט רגיל
+            if (allMatches.length === 0) {
+                return children;
+            }
+            
+            // מיון לפי מיקום
+            allMatches.sort((a, b) => a.start - b.start);
+            
+            // בניית מערך של חלקים
+            const parts = [];
+            let lastIndex = 0;
+            
+            allMatches.forEach((match, idx) => {
+                // טקסט לפני הביטוי
+                if (match.start > lastIndex) {
+                    parts.push(text.substring(lastIndex, match.start));
+                }
+                // הביטוי המתמטי עם dir="ltr"
+                parts.push(
+                    <span key={`math-${idx}`} dir="ltr" style={{ display: 'inline-block', unicodeBidi: 'isolate' }}>
+                        {match.text}
+                    </span>
+                );
+                lastIndex = match.end;
+            });
+            
+            // טקסט אחרון
+            if (lastIndex < text.length) {
+                parts.push(text.substring(lastIndex));
+            }
+            
+            return <>{parts}</>;
+        };
+
         // --- רכיבי אייקונים (SVG) ---
         const Icons = {
             ChevronRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
@@ -87,7 +173,8 @@
               points: [
                 { title: 'm (שיפוע)', text: 'המספר שצמוד ל-x.\nחיובי (+) = עולה ↗️\nשלילי (-) = יורדת ↘️\nאפס = קבועה (קו ישר מאוזן).' },
                 { title: 'b (חיתוך y)', text: 'המספר החופשי (בלי איקס). קובע באיזה גובה הפונקציה חותכת את ציר ה-y.' },
-                { title: 'נקודות חיתוך', text: 'עם ציר y: מציבים x=0.\nעם ציר x: מציבים y=0 ופותרים משוואה.' }
+                { title: 'נקודות חיתוך', text: 'עם ציר y: מציבים x=0.\nעם ציר x: מציבים y=0 ופותרים משוואה.' },
+                { title: '💡 דוגמה: y = -2x + 6', text: 'שיפוע: -2 (שלילי → יורדת)\nחיתוך y: (0, 6)\nחיתוך x: נציב y=0 → 0 = -2x + 6 → x = 3 → (3, 0)\nבדיקת נקודה: האם (4, -2) על הישר?\nנציב x=4: y = -2(4) + 6 = -2 ✓' }
               ]
             },
             questions: [
@@ -139,6 +226,54 @@
                 options: ['(0, 0)', '(0, 3)', '(3, 0)', '(1, 1)'],
                 correct: '(0, 0)',
                 explanation: 'פונקציה מהצורה y=mx (בלי b) תמיד עוברת בראשית הצירים (0,0).'
+              },
+              {
+                type: 'multiple',
+                q: 'נתונה הפונקציה y = -2x + 6. מהו השיפוע?',
+                options: ['-2', '6', '2', '-6'],
+                correct: '-2',
+                explanation: 'השיפוע הוא המספר שצמוד ל-x, כולל הסימן. כאן השיפוע הוא -2.'
+              },
+              {
+                type: 'multiple',
+                q: 'נתונה הפונקציה y = -2x + 6. האם היא עולה או יורדת?',
+                options: ['יורדת', 'עולה', 'קבועה', 'לא ניתן לדעת'],
+                correct: 'יורדת',
+                explanation: 'השיפוע הוא -2 (שלילי), ולכן הפונקציה יורדת.'
+              },
+              {
+                type: 'input',
+                q: 'מהי נקודת החיתוך של y = -2x + 6 עם ציר ה-x? (כתוב רק את ה-x, למשל: 3)',
+                correct: '3',
+                explanation: 'מציבים y=0: 0 = -2x + 6 → 2x = 6 → x = 3. נקודת החיתוך היא (3, 0).'
+              },
+              {
+                type: 'multiple',
+                q: 'מהי נקודת החיתוך של y = -2x + 6 עם ציר ה-y?',
+                options: ['(0, 6)', '(6, 0)', '(0, -2)', '(-2, 0)'],
+                correct: '(0, 6)',
+                explanation: 'מציבים x=0: y = -2(0) + 6 = 6. נקודת החיתוך היא (0, 6).'
+              },
+              {
+                type: 'multiple',
+                q: 'האם הנקודה (4, -2) נמצאת על הישר y = -2x + 6?',
+                options: ['כן', 'לא', 'לא ניתן לדעת', 'רק אם x=4'],
+                correct: 'כן',
+                explanation: 'נציב x=4: y = -2(4) + 6 = -8 + 6 = -2. יצא בדיוק ה-y של הנקודה, לכן היא על הישר.'
+              },
+              {
+                type: 'multiple',
+                q: 'מה השיפוע של הפונקציה y = 5x?',
+                options: ['5', '0', '1', 'לא ניתן לדעת'],
+                correct: '5',
+                explanation: 'כשאין b במשוואה, השיפוע הוא המספר שצמוד ל-x. כאן השיפוע הוא 5.'
+              },
+              {
+                type: 'multiple',
+                q: 'מהי נקודת החיתוך של y = 3x - 9 עם ציר ה-x?',
+                options: ['(3, 0)', '(0, 3)', '(0, -9)', '(-9, 0)'],
+                correct: '(3, 0)',
+                explanation: 'מציבים y=0: 0 = 3x - 9 → 3x = 9 → x = 3. נקודת החיתוך היא (3, 0).'
               }
             ]
           },
@@ -155,7 +290,8 @@
               points: [
                 { title: 'סדר פעולות', text: '1. פתיחת סוגריים\n2. העברת אגפים (מספרים לצד אחד, איקסים לשני)\n3. כינוס איברים\n4. חילוק במקדם של x.' },
                 { title: 'זהירות - מינוס!', text: 'מינוס לפני סוגריים הופך את כל הסימנים בפנים. דוגמה: \n-(x+2) \nהופך ל: \n-x - 2' },
-                { title: 'העברת אגפים', text: 'כשמעבירים איבר מצד לצד של ה"שווה", הסימן שלו משתנה (פלוס הופך למינוס ולהפך).' }
+                { title: 'העברת אגפים', text: 'כשמעבירים איבר מצד לצד של ה"שווה", הסימן שלו משתנה (פלוס הופך למינוס ולהפך).' },
+                { title: '💡 דוגמה: 4(x - 2) - 3(x + 1) = 5', text: 'שלב 1 - פתיחת סוגריים:\n4x - 8 - 3x - 3 = 5\nשלב 2 - כינוס איברים:\nx - 11 = 5\nשלב 3 - העברת אגפים:\nx = 5 + 11 = 16' }
               ]
             },
             questions: [
@@ -198,6 +334,52 @@
                 options: ['3x + 2 = 17', '3(x + 2) = 17', 'x + 3 + 2 = 17', '2x + 3 = 17'],
                 correct: '3x + 2 = 17',
                 explanation: 'מספר (x) כפול 3 (3x) ועוד 2 (+2) שווה ל-17.'
+              },
+              {
+                type: 'input',
+                q: 'פתור: 4(x - 2) - 3(x + 1) = 5 (כתוב רק את המספר)',
+                correct: '16',
+                explanation: 'פותחים סוגריים: 4x - 8 - 3x - 3 = 5\nכונסים: x - 11 = 5\nמעבירים אגפים: x = 16'
+              },
+              {
+                type: 'multiple',
+                q: 'מה התוצאה של פתיחת הסוגריים: 4(x - 2)?',
+                options: ['4x - 8', '4x - 2', '4x + 8', 'x - 8'],
+                correct: '4x - 8',
+                explanation: 'מכפילים את 4 בכל מה שבסוגריים: 4 כפול x זה 4x, ו-4 כפול 2- זה 8-.'
+              },
+              {
+                type: 'multiple',
+                q: 'מה התוצאה של פתיחת הסוגריים: -3(x + 1)?',
+                options: ['-3x - 3', '-3x + 3', '3x - 3', '-3x + 1'],
+                correct: '-3x - 3',
+                explanation: 'המינוס משפיע על כל הסימנים! 3- כפול x זה 3x-, ו-3- כפול 1+ זה 3-.'
+              },
+              {
+                type: 'input',
+                q: 'פתור: 2(x + 3) = 14 (כתוב רק את המספר)',
+                correct: '4',
+                explanation: 'פותחים סוגריים: 2x + 6 = 14\nמעבירים אגפים: 2x = 8\nמחלקים: x = 4'
+              },
+              {
+                type: 'multiple',
+                q: 'פתור: 3x - 5 = 2x + 7',
+                options: ['12', '2', '-12', '5'],
+                correct: '12',
+                explanation: 'מעבירים את 2x אגף: x - 5 = 7\nמעבירים את 5- אגף: x = 12'
+              },
+              {
+                type: 'input',
+                q: 'פתור: 5(x - 1) - 2(x + 3) = 4 (כתוב רק את המספר)',
+                correct: '5',
+                explanation: 'פותחים: 5x - 5 - 2x - 6 = 4\nכונסים: 3x - 11 = 4\nמעבירים: 3x = 15 → x = 5'
+              },
+              {
+                type: 'multiple',
+                q: 'מה השלב הראשון בפתרון: 2(x - 5) + 3(x + 1) = 10?',
+                options: ['לפתוח סוגריים', 'להעביר את 10 אגף', 'לחלק ב-x', 'לכונס איברים'],
+                correct: 'לפתוח סוגריים',
+                explanation: 'תמיד מתחילים בפתיחת סוגריים לפני כל פעולה אחרת.'
               }
             ]
           },
@@ -215,7 +397,8 @@
                 { title: 'משפט צ.ז.צ', text: 'שתי צלעות שוות והזווית *שביניהן* שווה.' },
                 { title: 'משפט ז.צ.ז', text: 'שתי זוויות שוות והצלע *שביניהן* שווה.' },
                 { title: 'משפט צ.צ.צ', text: 'כל שלוש הצלעות שוות בהתאמה.' },
-                { title: 'נתונים מוחבאים', text: 'חפשו "שעון חול" (זוויות קודקודיות שוות) או צלע משותפת.' }
+                { title: 'נתונים מוחבאים', text: 'חפשו "שעון חול" (זוויות קודקודיות שוות) או צלע משותפת.' },
+                { title: '💡 דוגמה: הוכחת חפיפה', text: 'נתון: AM = MB, ∠A = ∠B\nצריך להוכיח: ΔAMC ≅ ΔBMD\n\nטענה 1: ∠A = ∠B (נתון)\nטענה 2: AM = MB (נתון)\nטענה 3: ∠AMC = ∠BMD (זוויות קודקודיות שוות)\nמסקנה: לפי ז.צ.ז' }
               ]
             },
             questions: [
@@ -260,6 +443,41 @@
                 options: ['180 מעלות', '90 מעלות', '360 מעלות', '100 מעלות'],
                 correct: '180 מעלות',
                 explanation: 'משפט יסודי: סכום הזוויות בכל משולש הוא תמיד 180 מעלות.'
+              },
+              {
+                type: 'multiple',
+                q: 'בציור "שעון חול", מה נכון לגבי הזוויות הקודקודיות?',
+                options: ['הן שוות זו לזו', 'סכומן 180', 'סכומן 90', 'אין קשר ביניהן'],
+                correct: 'הן שוות זו לזו',
+                explanation: 'זוויות קודקודיות (שנוצרות כששני קווים נחתכים) תמיד שוות זו לזו. זה נתון מוחבא חשוב להוכחות!'
+              },
+              {
+                type: 'multiple',
+                q: 'נתון: AM = MB, ∠A = ∠B. איזה נתון נוסף צריך כדי להוכיח חפיפה לפי ז.צ.ז?',
+                options: ['זווית נוספת שווה', 'צלע משותפת', 'זוויות קודקודיות שוות', 'כל התשובות נכונות'],
+                correct: 'זוויות קודקודיות שוות',
+                explanation: 'יש לנו זווית וצלע. כדי להשתמש בז.צ.ז, צריך זווית נוספת שביניהן. זוויות קודקודיות הן הפתרון!'
+              },
+              {
+                type: 'multiple',
+                q: 'אם שני משולשים חופפים, מה נכון?',
+                options: ['כל הצלעות והזוויות שוות', 'רק הצלעות שוות', 'רק הזוויות שוות', 'רק חלק מהצלעות שוות'],
+                correct: 'כל הצלעות והזוויות שוות',
+                explanation: 'כשמשולשים חופפים, כל הצלעות והזוויות המתאימות שוות זו לזו.'
+              },
+              {
+                type: 'multiple',
+                q: 'במשולש שווה שוקיים, מה נכון לגבי השוקיים?',
+                options: ['הן שוות זו לזו', 'הן שונות', 'אחת כפולה מהשנייה', 'לא ניתן לדעת'],
+                correct: 'הן שוות זו לזו',
+                explanation: 'במשולש שווה שוקיים, שתי השוקיים תמיד שוות זו לזו (וזו ההגדרה שלו).'
+              },
+              {
+                type: 'multiple',
+                q: 'מהו משפט החפיפה המתאים כאשר יש שתי זוויות שוות וצלע אחת שווה?',
+                options: ['ז.צ.ז', 'צ.ז.צ', 'צ.צ.צ', 'לא ניתן להוכיח'],
+                correct: 'ז.צ.ז',
+                explanation: 'כשיש שתי זוויות שוות והצלע שביניהן שווה, משתמשים במשפט ז.צ.ז.'
               }
             ]
           },
@@ -276,7 +494,8 @@
               points: [
                 { title: '1. חיבור', text: 'מחברים את מספרי היחס (למשל 2:3 זה 5 יחידות סה"כ).' },
                 { title: '2. חילוק', text: 'לוקחים את השלם ומחלקים בסכום שיצא. כך מוצאים כמה שווה "יחידה אחת".' },
-                { title: '3. כפל', text: 'מכפילים את השווי של יחידה אחת בכל אחד מחלקי היחס המקוריים.' }
+                { title: '3. כפל', text: 'מכפילים את השווי של יחידה אחת בכל אחד מחלקי היחס המקוריים.' },
+                { title: '💡 דוגמה: בכיתה 35 תלמידים, יחס 3:4', text: 'שלב 1: 3 + 4 = 7 יחידות\nשלב 2: 35 ÷ 7 = 5 (כל יחידה = 5 תלמידים)\nשלב 3: בנים (3 יחידות) = 3 × 5 = 15\nבנות (4 יחידות) = 4 × 5 = 20\nבדיקה: 15 + 20 = 35 ✓' }
               ]
             },
             questions: [
@@ -305,6 +524,51 @@
                 options: ['1:2', '1:3', '2:1', '1:5'],
                 correct: '1:2',
                 explanation: 'אם נצמצם את שני המספרים ב-10 (נחלק ב-10), נקבל 1 ו-2.'
+              },
+              {
+                type: 'input',
+                q: 'בכיתה יש 35 תלמידים. היחס בין בנים לבנות הוא 3:4. כמה בנים יש? (כתוב רק את המספר)',
+                correct: '15',
+                explanation: 'סה"כ 7 יחידות (3+4). כל יחידה שווה 5 (35÷7). בנים = 3×5 = 15.'
+              },
+              {
+                type: 'input',
+                q: 'בכיתה יש 35 תלמידים. היחס בין בנים לבנות הוא 3:4. כמה בנות יש? (כתוב רק את המספר)',
+                correct: '20',
+                explanation: 'סה"כ 7 יחידות (3+4). כל יחידה שווה 5 (35÷7). בנות = 4×5 = 20.'
+              },
+              {
+                type: 'multiple',
+                q: 'מחלקים 60 שוקולדים ביחס של 2:3. כמה שוקולדים יקבל החלק הגדול?',
+                options: ['36', '24', '30', '40'],
+                correct: '36',
+                explanation: 'סה"כ 5 יחידות (2+3). כל יחידה שווה 12 (60÷5). החלק הגדול (3 יחידות) = 3×12 = 36.'
+              },
+              {
+                type: 'input',
+                q: 'היחס בין קמח לסוכר הוא 5:1. אם יש 120 גרם תערובת, כמה גרם קמח יש? (כתוב רק את המספר)',
+                correct: '100',
+                explanation: 'סה"כ 6 יחידות (5+1). כל יחידה שווה 20 (120÷6). קמח (5 יחידות) = 5×20 = 100.'
+              },
+              {
+                type: 'multiple',
+                q: 'מחלקים כסף ביחס של 1:2:3. אם הסך הכל הוא 60 שקל, כמה יקבל החלק הקטן ביותר?',
+                options: ['10', '20', '30', '15'],
+                correct: '10',
+                explanation: 'סה"כ 6 יחידות (1+2+3). כל יחידה שווה 10 (60÷6). החלק הקטן (1 יחידה) = 10.'
+              },
+              {
+                type: 'input',
+                q: 'היחס בין אורך לרוחב הוא 4:3. אם האורך הוא 20 ס"מ, מה הרוחב? (כתוב רק את המספר)',
+                correct: '15',
+                explanation: 'אם האורך (4 יחידות) הוא 20, אז כל יחידה שווה 5 (20÷4). הרוחב (3 יחידות) = 3×5 = 15.'
+              },
+              {
+                type: 'multiple',
+                q: 'מחלקים 48 תפוחים ביחס של 1:3. כמה תפוחים יקבל החלק הקטן?',
+                options: ['12', '16', '24', '36'],
+                correct: '12',
+                explanation: 'סה"כ 4 יחידות (1+3). כל יחידה שווה 12 (48÷4). החלק הקטן (1 יחידה) = 12.'
               }
             ]
           }
@@ -463,7 +727,7 @@
                         <Icons.Lightbulb className="w-6 h-6 text-yellow-300" />
                         <span className="font-bold opacity-90">דף חזרה</span>
                       </div>
-                      <h1 className="text-2xl font-bold">{currentTopic.studyMaterial.title}</h1>
+                      <h1 className="text-2xl font-bold"><MathText>{currentTopic.studyMaterial.title}</MathText></h1>
                     </div>
                     
                     <div className="p-6 space-y-6">
@@ -473,8 +737,8 @@
                             {idx + 1}
                           </div>
                           <div>
-                            <h3 className="font-bold text-gray-800 mb-1">{point.title}</h3>
-                            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{point.text}</p>
+                            <h3 className="font-bold text-gray-800 mb-1"><MathText>{point.title}</MathText></h3>
+                            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line"><MathText>{point.text}</MathText></p>
                           </div>
                         </div>
                       ))}
@@ -548,7 +812,7 @@
                 <div className="flex-1 flex flex-col">
                   <div className="bg-white rounded-3xl shadow-sm p-6 mb-6 border border-gray-100">
                     <span className="text-sm text-gray-400 font-medium mb-2 block">שאלה {questionIndex + 1} מתוך {questions.length}</span>
-                    <h2 className="text-xl font-bold text-gray-800 leading-relaxed">{currentQ.q}</h2>
+                    <h2 className="text-xl font-bold text-gray-800 leading-relaxed"><MathText>{currentQ.q}</MathText></h2>
                   </div>
 
                   {/* Options / Input */}
@@ -567,7 +831,7 @@
                               : 'bg-white border-transparent shadow-sm hover:border-blue-200 hover:bg-blue-50 text-gray-700'
                             }`}
                         >
-                          {opt}
+                          <MathText>{opt}</MathText>
                         </button>
                       ))
                     ) : (
@@ -606,7 +870,7 @@
                         </span>
                       </div>
                       <p className="text-gray-600 text-sm leading-relaxed pr-9">
-                        {currentQ.explanation}
+                        <MathText>{currentQ.explanation}</MathText>
                       </p>
                       <button
                         onClick={nextQuestion}
