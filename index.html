@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>מתרגלים בכיף - הכנה למבחן במתמטיקה</title>
+    
+    <!-- טעינת ספריות חיצוניות (ריאקט ועיצוב) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- הגדרות עיצוב ואנימציות -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Rubik', sans-serif;
+            background-color: #f9fafb;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); }
+            100% { transform: translateY(100vh) rotate(360deg); }
+        }
+        .animate-fall {
+            animation-name: fall;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- רכיבי אייקונים (SVG) ---
+        // יצרתי אותם ידנית כדי לא להיות תלוי בספריות חיצוניות כבדות
+        const Icons = {
+            ChevronRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
+            CheckCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            XCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>,
+            Trophy: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17"/><path d="M14 14.66V17"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/><path d="M8.5 22v-2.08a6 6 0 0 1 .6-2.92"/></svg>,
+            BookOpen: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+            Calculator: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
+            PieChart: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>,
+            Star: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+            RefreshCw: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>,
+            ArrowLeft: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
+            Lightbulb: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>,
+            Play: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        };
+
+        // --- נתונים ---
+        const topics = [
+          {
+            id: 'functions',
+            title: 'פונקציה קווית',
+            icon: <Icons.PieChart className="w-6 h-6" />,
+            color: 'bg-blue-500',
+            lightColor: 'bg-blue-50',
+            borderColor: 'border-blue-200',
+            textColor: 'text-blue-700',
+            studyMaterial: {
+              title: 'הנוסחה: y = mx + b',
+              points: [
+                { title: 'מה זה m? (שיפוע)', text: 'המספר שצמוד ל-x. אם הוא חיובי הפונקציה עולה ↗️, ואם שלילי יורדת ↘️.' },
+                { title: 'מה זה b? (חיתוך y)', text: 'המספר החופשי. הוא קובע איפה הקו חותך את ציר ה-y (הגובה ההתחלתי).' },
+                { title: 'נקודות חיתוך', text: 'חיתוך עם ציר y: מציבים x=0. \nחיתוך עם ציר x: מציבים y=0.' }
+              ]
+            },
+            questions: [
+              {
+                type: 'multiple',
+                q: 'בפונקציה y = -3x + 5, מהו השיפוע (m)?',
+                options: ['5', '-3', '3', '-5'],
+                correct: '-3',
+                explanation: 'השיפוע (m) הוא תמיד המספר שצמוד ל-x.'
+              },
+              {
+                type: 'multiple',
+                q: 'האם הפונקציה y = 4x - 2 עולה או יורדת?',
+                options: ['עולה', 'יורדת'],
+                correct: 'עולה',
+                explanation: 'השיפוע (4) הוא חיובי, ולכן הפונקציה עולה.'
+              },
+              {
+                type: 'input',
+                q: 'נתונה הפונקציה y = 2x - 6. מצא את נקודת החיתוך עם ציר ה-y (כתוב רק את ערך ה-y).',
+                correct: '-6',
+                explanation: 'נקודת החיתוך עם ציר ה-y היא המספר החופשי (b), במקרה הזה 6-.'
+              },
+              {
+                type: 'multiple',
+                q: 'איזו נקודה נמצאת על הישר y = x + 2?',
+                options: ['(1, 4)', '(2, 4)', '(3, 4)', '(0, 0)'],
+                correct: '(2, 4)',
+                explanation: 'נציב x=2 ונקבל: y = 2 + 2 = 4. הנקודה מתאימה!'
+              }
+            ]
+          },
+          {
+            id: 'equations',
+            title: 'משוואות',
+            icon: <Icons.Calculator className="w-6 h-6" />,
+            color: 'bg-green-500',
+            lightColor: 'bg-green-50',
+            borderColor: 'border-green-200',
+            textColor: 'text-green-700',
+            studyMaterial: {
+              title: 'חוקים לפתרון נכון',
+              points: [
+                { title: 'סדר פעולות', text: 'קודם כל פותחים סוגריים! מכפילים את המספר שבחוץ בכל מה שבפנים.' },
+                { title: 'זהירות - מינוס!', text: 'מינוס לפני סוגריים הופך את כל הסימנים בפנים (פלוס נהיה מינוס).' },
+                { title: 'העברת אגפים', text: 'מספר שעובר צד (מעבר לסימן ה-shave) משנה סימן.' }
+              ]
+            },
+            questions: [
+              {
+                type: 'input',
+                q: 'פתור את המשוואה: 2x - 4 = 10',
+                correct: '7',
+                explanation: 'נעביר את ה-4 אגף: 2x = 14, ואז נחלק ב-2.'
+              },
+              {
+                type: 'multiple',
+                q: 'מה השלב הראשון בפתרון המשוואה 3(x - 2) = 9?',
+                options: ['להעביר את 9 אגף', 'לחלק ב-x', 'לפתוח סוגריים', 'לחסר 3'],
+                correct: 'לפתוח סוגריים',
+                explanation: 'לפי סדר פעולות חשבון, קודם פותחים סוגריים: 3x - 6 = 9.'
+              },
+              {
+                type: 'input',
+                q: 'פתור: 5x + 2 = 3x + 12',
+                correct: '5',
+                explanation: 'נעביר איקסים שמאלה ומספרים ימינה: 2x = 10, ולכן x=5.'
+              }
+            ]
+          },
+          {
+            id: 'geometry',
+            title: 'גיאומטריה וחפיפה',
+            icon: <Icons.BookOpen className="w-6 h-6" />,
+            color: 'bg-purple-500',
+            lightColor: 'bg-purple-50',
+            borderColor: 'border-purple-200',
+            textColor: 'text-purple-700',
+            studyMaterial: {
+              title: 'איך מוכיחים חפיפה?',
+              points: [
+                { title: '3 המשפטים', text: 'צ.ז.צ (צלע-זווית-צלע), ז.צ.ז (זווית-צלע-זווית), צ.צ.צ (הכל שווה).' },
+                { title: 'נתונים מוחבאים', text: 'חפשו "שעון חול" (זוויות קודקודיות שוות) או צלע משותפת למשולשים צמודים.' },
+                { title: 'כתיבת הוכחה', text: 'חובה לכתוב טבלה: טענה ונימוק לכל שורה.' }
+              ]
+            },
+            questions: [
+              {
+                type: 'multiple',
+                q: 'נתונים שני משולשים עם שתי צלעות שוות והזווית שביניהן שווה. לפי איזה משפט הם חופפים?',
+                options: ['צ.צ.צ', 'ז.צ.ז', 'צ.ז.צ', 'לא חופפים'],
+                correct: 'צ.ז.צ',
+                explanation: 'צלע, זווית ביניהן, וצלע נוספת = צ.ז.צ.'
+              },
+              {
+                type: 'multiple',
+                q: 'בציור של "שעון חול" (שני משולשים מחוברים בקודקוד), מה תמיד שווה?',
+                options: ['הצלעות המקבילות', 'הזוויות הקודקודיות', 'התיכונים', 'אין שוויון מיוחד'],
+                correct: 'הזוויות הקודקודיות',
+                explanation: 'זוויות קודקודיות (אחת מול השנייה ב-X) תמיד שוות זו לזו.'
+              },
+              {
+                type: 'multiple',
+                q: 'אם נתון שמשולש ABC חופף למשולש DEF, למה שווה הצלע AC?',
+                options: ['DE', 'EF', 'DF', 'AB'],
+                correct: 'DF',
+                explanation: 'האותיות מתאימות לפי הסדר: האות הראשונה והשלישית (AC) מתאימות לראשונה ושלישית בשני (DF).'
+              }
+            ]
+          },
+          {
+            id: 'ratio',
+            title: 'יחס ופרופורציה',
+            icon: <Icons.Star className="w-6 h-6" />,
+            color: 'bg-orange-500',
+            lightColor: 'bg-orange-50',
+            borderColor: 'border-orange-200',
+            textColor: 'text-orange-700',
+            studyMaterial: {
+              title: 'שיטת השלבים',
+              points: [
+                { title: '1. חיבור', text: 'מחברים את מספרי היחס (למשל 2:3 זה 5 יחידות סה"כ).' },
+                { title: '2. חילוק', text: 'לוקחים את השלם ומחלקים בסכום שיצא. כך מוצאים כמה שווה "יחידה אחת".' },
+                { title: '3. כפל', text: 'מכפילים את השווי של יחידה אחת בכל אחד מחלקי היחס המקוריים.' }
+              ]
+            },
+            questions: [
+              {
+                type: 'input',
+                q: 'היחס בין בנים לבנות הוא 2:3. כמה יחידות יחס יש סה"כ?',
+                correct: '5',
+                explanation: 'מחברים את המספרים: 2 + 3 = 5.'
+              },
+              {
+                type: 'input',
+                q: 'מחלקים 20 סוכריות ביחס של 1:4. כמה סוכריות יקבל הילד עם החלק הקטן?',
+                correct: '4',
+                explanation: 'סה"כ 5 יחידות יחס. כל יחידה שווה 4 (20 לחלק ל-5). החלק הקטן הוא 1 כפול 4.'
+              }
+            ]
+          }
+        ];
+
+        const Confetti = () => (
+          <div className="fixed inset-0 pointer-events-none z-50 flex justify-center items-start overflow-hidden">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute animate-fall"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  animationDuration: `${Math.random() * 3 + 2}s`,
+                  animationDelay: `${Math.random() * 2}s`
+                }}
+              >
+                <Icons.Star fill={['#FFD700', '#FF69B4', '#00CED1', '#32CD32'][Math.floor(Math.random() * 4)]} className="w-4 h-4 text-transparent" />
+              </div>
+            ))}
+          </div>
+        );
+
+        function MathApp() {
+          const [view, setView] = useState('menu'); // menu, study, quiz, completed
+          const [currentTopic, setCurrentTopic] = useState(null);
+          const [questionIndex, setQuestionIndex] = useState(0);
+          const [score, setScore] = useState(0);
+          const [showFeedback, setShowFeedback] = useState(false);
+          const [isCorrect, setIsCorrect] = useState(false);
+          const [inputValue, setInputValue] = useState('');
+          const [completedTopics, setCompletedTopics] = useState([]);
+
+          const handleTopicSelect = (topic) => {
+            setCurrentTopic(topic);
+            setQuestionIndex(0);
+            setScore(0);
+            setShowFeedback(false);
+            setInputValue('');
+            setView('study');
+          };
+
+          const startQuiz = () => {
+            setView('quiz');
+          };
+
+          const handleAnswer = (answer) => {
+            if (showFeedback) return;
+            
+            const correct = currentTopic.questions[questionIndex].correct;
+            const isRight = answer.toString().trim() === correct.toString().trim();
+            
+            setIsCorrect(isRight);
+            if (isRight) setScore(score + 1);
+            setShowFeedback(true);
+          };
+
+          const nextQuestion = () => {
+            if (questionIndex < currentTopic.questions.length - 1) {
+              setQuestionIndex(questionIndex + 1);
+              setShowFeedback(false);
+              setInputValue('');
+              setIsCorrect(false);
+            } else {
+              if (!completedTopics.includes(currentTopic.id)) {
+                setCompletedTopics([...completedTopics, currentTopic.id]);
+              }
+              setView('completed');
+            }
+          };
+
+          const resetApp = () => {
+            setCurrentTopic(null);
+            setQuestionIndex(0);
+            setView('menu');
+          };
+
+          // Main Menu View
+          if (view === 'menu') {
+            return (
+              <div className="min-h-screen p-4">
+                <div className="max-w-md mx-auto">
+                  <header className="mb-8 text-center pt-4">
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">מתרגלים בכיף 🚀</h1>
+                    <p className="text-gray-600">הכנה למבחן במתמטיקה - כיתה ח'</p>
+                    <div className="mt-4 flex justify-center gap-2">
+                      <span className="text-sm bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200 text-gray-600">
+                        הושלמו: {completedTopics.length}/{topics.length}
+                      </span>
+                    </div>
+                  </header>
+
+                  <div className="grid gap-4 pb-8">
+                    {topics.map((topic) => (
+                      <button
+                        key={topic.id}
+                        onClick={() => handleTopicSelect(topic)}
+                        className={`relative overflow-hidden p-6 rounded-2xl shadow-sm hover:shadow-md transition-all bg-white text-right group border border-transparent hover:border-gray-100`}
+                      >
+                        <div className={`absolute inset-y-0 left-0 w-2 ${topic.color}`}></div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl ${topic.lightColor} ${topic.textColor} group-hover:scale-110 transition-transform`}>
+                              {topic.icon}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-lg text-gray-800 group-hover:text-blue-600 transition-colors">{topic.title}</h3>
+                              <p className="text-sm text-gray-500">{topic.questions.length} שאלות</p>
+                            </div>
+                          </div>
+                          {completedTopics.includes(topic.id) ? (
+                            <Icons.CheckCircle className="w-6 h-6 text-green-500" />
+                          ) : (
+                            <Icons.ChevronRight className="w-6 h-6 text-gray-300" />
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          // Study View
+          if (view === 'study' && currentTopic) {
+            return (
+              <div className="min-h-screen p-4">
+                <div className="max-w-md mx-auto flex flex-col h-full">
+                  {/* Header */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <button onClick={resetApp} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                      <Icons.ArrowLeft className="w-6 h-6 text-gray-600" />
+                    </button>
+                    <h2 className="text-xl font-bold text-gray-800">חזרה על החומר</h2>
+                  </div>
+
+                  {/* Content Card */}
+                  <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6 flex-1">
+                    <div className={`${currentTopic.color} p-6 text-white`}>
+                      <div className="flex items-center gap-3 mb-2">
+                        <Icons.Lightbulb className="w-6 h-6 text-yellow-300" />
+                        <span className="font-bold opacity-90">דף חזרה</span>
+                      </div>
+                      <h1 className="text-2xl font-bold">{currentTopic.studyMaterial.title}</h1>
+                    </div>
+                    
+                    <div className="p-6 space-y-6">
+                      {currentTopic.studyMaterial.points.map((point, idx) => (
+                        <div key={idx} className="flex gap-4">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${currentTopic.lightColor} ${currentTopic.textColor}`}>
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-gray-800 mb-1">{point.title}</h3>
+                            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{point.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Start Button */}
+                  <button
+                    onClick={startQuiz}
+                    className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 ${currentTopic.color}`}
+                  >
+                    <Icons.Play className="w-5 h-5 fill-current" />
+                    התחל תרגול
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          // Completion View
+          if (view === 'completed') {
+            return (
+              <div className="min-h-screen p-4 flex items-center justify-center">
+                <Confetti />
+                <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-sm w-full relative overflow-hidden animate-fade-in-up">
+                  <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 to-purple-500"></div>
+                  <div className="mb-6 flex justify-center">
+                    <Icons.Trophy className="w-20 h-20 text-yellow-400 drop-shadow-lg animate-bounce" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">כל הכבוד!</h2>
+                  <p className="text-gray-600 mb-6">סיימת את היחידה בהצלחה!</p>
+                  <div className="text-4xl font-bold text-blue-600 mb-8">{score} / {currentTopic.questions.length}</div>
+                  <button
+                    onClick={resetApp}
+                    className="w-full py-3 px-6 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Icons.RefreshCw className="w-4 h-4" />
+                    חזרה לתפריט הראשי
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
+          // Quiz View
+          const currentQ = currentTopic.questions[questionIndex];
+          const progress = ((questionIndex) / currentTopic.questions.length) * 100;
+
+          return (
+            <div className="min-h-screen p-4 font-sans">
+              <div className="max-w-md mx-auto h-full flex flex-col">
+                
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <button onClick={() => setView('study')} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
+                    <Icons.ArrowLeft className="w-6 h-6 text-gray-600" />
+                  </button>
+                  <span className="font-bold text-gray-700">{currentTopic.title}</span>
+                  <div className="w-8"></div> 
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-8 overflow-hidden">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-500 ${currentTopic.color}`} 
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+
+                {/* Question Card */}
+                <div className="flex-1 flex flex-col">
+                  <div className="bg-white rounded-3xl shadow-sm p-6 mb-6 border border-gray-100">
+                    <span className="text-sm text-gray-400 font-medium mb-2 block">שאלה {questionIndex + 1} מתוך {currentTopic.questions.length}</span>
+                    <h2 className="text-xl font-bold text-gray-800 leading-relaxed">{currentQ.q}</h2>
+                  </div>
+
+                  {/* Options / Input */}
+                  <div className="space-y-3">
+                    {currentQ.type === 'multiple' ? (
+                      currentQ.options.map((opt, idx) => (
+                        <button
+                          key={idx}
+                          disabled={showFeedback}
+                          onClick={() => handleAnswer(opt)}
+                          className={`w-full p-4 text-right rounded-xl border-2 transition-all duration-200 font-medium
+                            ${showFeedback 
+                              ? opt === currentQ.correct 
+                                ? 'bg-green-50 border-green-500 text-green-700' 
+                                : opt === inputValue ? 'bg-red-50 border-red-200 text-red-400' : 'bg-white border-gray-100 opacity-50'
+                              : 'bg-white border-transparent shadow-sm hover:border-blue-200 hover:bg-blue-50 text-gray-700'
+                            }`}
+                        >
+                          {opt}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          disabled={showFeedback}
+                          value={inputValue}
+                          onChange={(e) => setInputValue(e.target.value)}
+                          placeholder="הקלד תשובה..."
+                          className="w-full p-4 rounded-xl border-2 border-gray-200 text-lg focus:border-blue-500 focus:outline-none text-center"
+                        />
+                        {!showFeedback && inputValue && (
+                          <button 
+                            onClick={() => handleAnswer(inputValue)}
+                            className="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700"
+                          >
+                            בדוק תשובה
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Feedback Area */}
+                  {showFeedback && (
+                    <div className={`mt-6 p-4 rounded-xl ${isCorrect ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'} animate-fade-in-up`}>
+                      <div className="flex items-center gap-3 mb-2">
+                        {isCorrect ? (
+                          <Icons.CheckCircle className="w-6 h-6 text-green-500" />
+                        ) : (
+                          <Icons.XCircle className="w-6 h-6 text-red-500" />
+                        )}
+                        <span className={`font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                          {isCorrect ? 'צדקת! כל הכבוד' : 'לא נורא, ננסה שוב'}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 text-sm leading-relaxed pr-9">
+                        {currentQ.explanation}
+                      </p>
+                      <button
+                        onClick={nextQuestion}
+                        className={`mt-4 w-full py-3 rounded-lg font-bold text-white transition-transform active:scale-95 ${isCorrect ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-800 hover:bg-gray-900'}`}
+                      >
+                        {questionIndex < currentTopic.questions.length - 1 ? 'לשאלה הבאה' : 'סיים יחידה'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<MathApp />);
+    </script>
+</body>
+</html>
