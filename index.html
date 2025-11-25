@@ -248,7 +248,7 @@
                 <h1 className="text-3xl font-bold text-gray-800 mb-2">מתרגלים בכיף 🚀</h1>
                 <p className="text-gray-600">הכנה למבחן במתמטיקה - כיתה ח'</p>
                 <div className="mt-4 flex justify-center gap-2">
-                  <span className="text-sm bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200 text-gray-600">
+                  <span className="text-base bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200 text-gray-600">
                     הושלמו: {completedTopics.length}/{rawTopics.length}
                   </span>
                 </div>
@@ -269,7 +269,7 @@
                         </div>
                         <div>
                           <h3 className="font-bold text-lg text-gray-800 group-hover:text-blue-600 transition-colors">{topic.title}</h3>
-                          <p className="text-sm text-gray-500">{topic.questions.length} שאלות</p>
+                          <p className="text-base text-gray-500">{topic.questions.length} שאלות</p>
                         </div>
                       </div>
                       {completedTopics.includes(topic.id) ? (
@@ -310,12 +310,12 @@
                 <div className="p-6 space-y-6">
                   {currentTopic.studyMaterial.points.map((point, idx) => (
                     <div key={idx} className="flex gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${currentTopic.lightColor} ${currentTopic.textColor}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-base ${currentTopic.lightColor} ${currentTopic.textColor}`}>
                         {idx + 1}
                       </div>
                       <div>
                         <h3 className="font-bold text-gray-800 mb-1">{point.title}</h3>
-                        <div className="text-gray-600 text-sm">{formatText(point.text)}</div>
+                        <div className="text-gray-600 text-lg">{formatText(point.text)}</div>
                       </div>
                     </div>
                   ))}
@@ -384,7 +384,7 @@
 
             <div className="flex-1 flex flex-col">
               <div className="bg-white rounded-3xl shadow-sm p-6 mb-6 border border-gray-100">
-                <span className="text-sm text-gray-400 font-medium mb-2 block">שאלה {questionIndex + 1} מתוך {questions.length}</span>
+                <span className="text-base text-gray-400 font-medium mb-2 block">שאלה {questionIndex + 1} מתוך {questions.length}</span>
                 <h2 className="text-xl font-bold text-gray-800 leading-relaxed">{formatText(currentQ.q)}</h2>
               </div>
 
@@ -440,7 +440,7 @@
                       {isCorrect ? 'צדקת! כל הכבוד' : 'לא נורא, ננסה שוב'}
                     </span>
                   </div>
-                  <div className="text-gray-600 text-sm leading-relaxed pr-9">
+                  <div className="text-gray-600 text-lg leading-relaxed pr-9">
                     {formatText(currentQ.explanation)}
                   </div>
                   <button
